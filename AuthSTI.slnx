@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AuthSTI.Infrastructure/AuthSTI.Infrastructure.csproj" />
+  <Project Path="AuthSTI/AuthSTI.Domain.csproj" />
+</Solution>
