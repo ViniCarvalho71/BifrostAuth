@@ -2,6 +2,7 @@
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using NHibernate;
+using NHibernate.Tool.hbm2ddl;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,11 +23,26 @@ namespace AuthSTI.Infrastructure.NHibernate.SessionFactory
                     PostgreSQLConfiguration.Standard
                         .ConnectionString(connectionString)
                         .ShowSql()
+                        .FormatSql()
+                        .AdoNetBatchSize(20)
                 )
                 .Mappings(m =>
                     m.FluentMappings.AddFromAssemblyOf<UserMap>())
+                .ExposeConfiguration(cfg =>
+                {
+                    new SchemaExport(cfg).Create(false, true);
+                })
                 .BuildSessionFactory();
 
             return _sessionFactory;
         }
+
+        public static ISession OpenSession()
+        {
+            if (_sessionFactory == null)
+                throw new InvalidOperationException("SessionFactory não foi inicializada.");
+
+            return _sessionFactory.OpenSession();
+        }
+    }
 }

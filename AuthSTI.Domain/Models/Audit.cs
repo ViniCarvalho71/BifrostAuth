@@ -8,10 +8,10 @@ namespace AuthSTI.Models
     public class Audit : EntityBase
     {
         [Required]
-        public int UserId { get; set; }
+        public virtual Guid UserId { get; set; }
         [Required]
-        public string Action { get; set; }  
-        public string PreviouValue {  get; set; }
-        public string NewValue { get; set; }
+        public virtual string Action { get; set; }  
+        public virtual string PreviouValue {  get; set; }
+        public virtual string NewValue { get; set; }
     }
 }

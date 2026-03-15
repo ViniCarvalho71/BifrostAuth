@@ -6,9 +6,9 @@ namespace AuthSTI.Models
 {
     public class RefreshToken : EntityBase
     {
-        public virtual string Token { get; set; }
-
         public virtual Guid UserId { get; set; }
+
+        public virtual string Token { get; set; }
 
         public virtual DateTime ExpiresAt { get; set; }
 

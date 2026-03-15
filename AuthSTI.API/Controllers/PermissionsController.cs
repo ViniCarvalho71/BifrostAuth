@@ -1,0 +1,48 @@
+using AuthSTI.Application.Dtos;
+using AuthSTI.Application.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+
+namespace AuthSTI.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PermissionsController : ControllerBase
+    {
+        private readonly IPermissionService _service;
+
+        public PermissionsController(IPermissionService service)
+        {
+            _service = service;
+        }
+
+        [HttpGet]
+        public ActionResult<IReadOnlyCollection<PermissionDto>> GetAll() => Ok(_service.GetAll());
+
+        [HttpGet("{id:guid}")]
+        public ActionResult<PermissionDto> Get(Guid id) => Ok(_service.Get(id));
+
+        [HttpPost]
+        public IActionResult Create([FromBody] PermissionDto dto)
+        {
+            _service.Save(dto);
+            return Ok();
+        }
+
+        [HttpPut("{id:guid}")]
+        public IActionResult Update(Guid id, [FromBody] PermissionDto dto)
+        {
+            dto.Id = id;
+            _service.Update(dto);
+            return NoContent();
+        }
+
+        [HttpDelete("{id:guid}")]
+        public IActionResult Delete(Guid id)
+        {
+            _service.Delete(id);
+            return NoContent();
+        }
+    }
+}
