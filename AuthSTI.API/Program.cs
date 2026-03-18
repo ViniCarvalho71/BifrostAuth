@@ -1,3 +1,4 @@
+using AuthSTI.Application.Configurations;
 using AuthSTI.Application.Interfaces;
 using AuthSTI.Application.Sevices;
 using AuthSTI.Domain.Repositories;
@@ -16,6 +17,10 @@ builder.Services.AddOpenApi();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionString 'DefaultConnection' não configurada.");
 
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("Jwt")
+);
+
 var sessionFactory = NHibernateSessionFactory.Build(connectionString);
 
 builder.Services.AddSingleton(sessionFactory);
@@ -33,6 +38,9 @@ builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+
 
 var app = builder.Build();
 

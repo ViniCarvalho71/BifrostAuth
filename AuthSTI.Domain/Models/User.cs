@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AuthSTI.Domain.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
@@ -19,6 +20,7 @@ namespace AuthSTI.Models
 
         public virtual IList<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
+        public virtual IList<UserApplication> UserApplications { get; set; }
 
     }
 }

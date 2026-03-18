@@ -11,10 +11,12 @@ namespace AuthSTI.Application.Sevices
     public class UserService : IUserService
     {
         private readonly IRepository<User> _repository;
+        private readonly IPasswordHash _passwordHasher;
 
-        public UserService(IRepository<User> repository)
+        public UserService(IRepository<User> repository, IPasswordHash passwordHasher)
         {
             _repository = repository;
+            _passwordHasher = passwordHasher;
         }
 
         public UserDto Get(Guid id)
@@ -38,7 +40,7 @@ namespace AuthSTI.Application.Sevices
                 Id = dto.Id,
                 Login = dto.Login,
                 Email = dto.Email,
-                PasswordHash = dto.PasswordHash,
+                PasswordHash = _passwordHasher.Hash(dto.PasswordHash),
                 IsActive = dto.IsActive,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -55,7 +57,6 @@ namespace AuthSTI.Application.Sevices
 
             entity.Login = dto.Login;
             entity.Email = dto.Email;
-            entity.PasswordHash = dto.PasswordHash;
             entity.IsActive = dto.IsActive;
             entity.UpdatedAt = DateTime.UtcNow;
 
