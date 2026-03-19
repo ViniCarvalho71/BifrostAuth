@@ -1,10 +1,12 @@
 using AuthSTI.Application.Configurations;
+using AuthSTI.Application.Criptografy;
 using AuthSTI.Application.Interfaces;
 using AuthSTI.Application.Sevices;
 using AuthSTI.Domain.Repositories;
 using AuthSTI.Infrastructure.NHibernate.SessionFactory;
 using AuthSTI.Infrastructure.Persistence.Repositories;
 using NHibernate;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +41,7 @@ builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPasswordHash, PasswordHasher>();
 
 
 
@@ -48,6 +51,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();

@@ -12,11 +12,11 @@ namespace AuthSTI.Infrastructure.NHibernate.Mappings
             Table("UserRoles");
 
             Map(x => x.UserId)
-            .CustomSqlType("uuid")
+            .CustomSqlType("char(36)")
             .Not.Nullable();
 
             Map(x => x.RoleId)
-                .CustomSqlType("uuid")
+                .CustomSqlType("char(36)")
                 .Not.Nullable();
 
             References(x => x.User)
