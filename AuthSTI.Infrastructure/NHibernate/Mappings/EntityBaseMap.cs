@@ -11,7 +11,7 @@ namespace AuthSTI.Infrastructure.NHibernate.Mappings
         public EntityBaseMap()
         {
             Id(x => x.Id)
-                .GeneratedBy.GuidComb();
+                .CustomSqlType("uuid");
 
 
             Map(x => x.CreatedAt)

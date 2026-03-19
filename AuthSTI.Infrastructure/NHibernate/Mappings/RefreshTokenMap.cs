@@ -12,7 +12,7 @@ namespace AuthSTI.Infrastructure.NHibernate.Mappings
             Table("RefreshTokens");
 
             Map(x => x.UserId)
-                .CustomSqlType("char(36)")
+                .CustomSqlType("uuid")
                 .Not.Nullable();
 
             Map(x => x.Token)

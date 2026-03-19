@@ -30,7 +30,7 @@ namespace AuthSTI.Infrastructure.NHibernate.SessionFactory
                     m.FluentMappings.AddFromAssemblyOf<UserMap>())
                 .ExposeConfiguration(cfg =>
                 {
-                    new SchemaExport(cfg).Create(false, true);
+                    new SchemaUpdate(cfg).Execute(false, true);
                 })
                 .BuildSessionFactory();
 

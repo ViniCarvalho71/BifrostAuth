@@ -14,12 +14,12 @@ namespace AuthSTI.Infrastructure.NHibernate.Mappings
 
             Map(x => x.UserId)
                 .Column("UserId")
-                .CustomSqlType("char(36)")
+                .CustomSqlType("uuid")
                 .Not.Nullable();
 
             Map(x => x.ApplicationId)
                 .Column("ApplicationId")
-                .CustomSqlType("char(36)")
+                .CustomSqlType("uuid")
                 .Not.Nullable();
 
             References(x => x.User)

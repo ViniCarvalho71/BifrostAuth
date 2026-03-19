@@ -32,7 +32,7 @@ namespace AuthSTI.Application.Sevices
             _applicationRepository = applicationRepository;
         }
 
-        public string GenerateToken(string userId, string email, IList<string> roles, IList<string> permissions, string client_id)
+        public string GenerateToken(string userId, string email,string login, IList<string> roles, IList<string> permissions, string client_id)
         {
 
             var key = new SymmetricSecurityKey(
@@ -45,12 +45,13 @@ namespace AuthSTI.Application.Sevices
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId),
                 new Claim(JwtRegisteredClaimNames.Email, email),
+                new Claim(JwtRegisteredClaimNames.Name, login),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
             foreach (var role in roles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                claims.Add(new Claim("role", role));
             }
 
             // Permissions
@@ -81,7 +82,7 @@ namespace AuthSTI.Application.Sevices
                     throw new Exception("Application inválida");
                 }
 
-                var user = _repository.Query().FirstOrDefault(u => u.Email == email && u.PasswordHash == password);
+                var user = _repository.Query().FirstOrDefault(u => u.Email == email);
                 if (user == null || !_passwordHasher.Verify(user.PasswordHash, password))
                 {
                     throw new Exception("Email ou senha inválidos");
@@ -105,7 +106,7 @@ namespace AuthSTI.Application.Sevices
                     .Distinct()
                     .ToList();
 
-                string jwt_token = GenerateToken(user.Id.ToString(), user.Email, roles, permissions, client_id);
+                string jwt_token = GenerateToken(user.Id.ToString(), user.Email,user.Login, roles, permissions, client_id);
 
                 return jwt_token;
 

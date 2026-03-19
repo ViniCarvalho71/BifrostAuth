@@ -12,7 +12,7 @@ namespace AuthSTI.Infrastructure.NHibernate.Mappings
             Table("Audits");
 
             Map(x => x.UserId)
-                .CustomSqlType("char(36)")
+                .CustomSqlType("uuid")
                 .Not.Nullable();
 
             Map(x => x.Action)

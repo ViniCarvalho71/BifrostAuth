@@ -28,6 +28,12 @@ namespace AuthSTI.Infrastructure.NHibernate.Mappings
                 .Cascade.All()
                 .Inverse();
 
+            HasMany(x => x.UserApplications)
+                .KeyColumn("UserId")
+                .Cascade.All()
+                .Inverse();
+
+
             HasMany(x => x.RefreshTokens)
                 .KeyColumn("UserId")
                 .Cascade.All()
