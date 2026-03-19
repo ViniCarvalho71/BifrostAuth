@@ -134,16 +134,6 @@ Configuração em `AuthSTI.API/appsettings.Development.json`:
   }
 }
 ```
-
----
-
-## 👨‍💻 Próximos passos (roadmap)
-
-- testes automatizados (`unit` e `integration`)
-- versionamento de API
-- políticas de autorização por permissionamento fino
-- pipeline CI/CD
-
 ---
 
 ## 📫 Contato
