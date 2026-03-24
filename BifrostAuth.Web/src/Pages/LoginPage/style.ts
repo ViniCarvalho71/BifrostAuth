@@ -2,11 +2,12 @@ import styled from "styled-components";
 
 export const PageContainer = styled.div`
 	min-height: 100vh;
+	position: relative;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	padding: 16px;
-	background-image: url("/bg_login.jpg");
+	background-image: linear-gradient(rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.38)), url("/bg_login.jpg");
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
@@ -37,7 +38,7 @@ export const Button = styled.button`
 	display: flex;
 	width: 200px;
 	height: 40px;
-	border: 1px solid #b696ff;
+	border: 2px solid #b696ff;
 	border-radius: 8px;
 	background: #ffffff;
     justify-content: center;
@@ -46,6 +47,7 @@ export const Button = styled.button`
 	font-size: 14px;
 	font-weight: 600;
 	cursor: pointer;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 	transition: background-color 0.2s ease, transform 0.1s ease;
 
 	&:hover {
@@ -65,9 +67,12 @@ export const Button = styled.button`
 
 export const Title = styled.h2`
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 40px;
-    color: #a064ff;
-    margin-bottom: 16px;
+	position: absolute;
+	top: 20px;
+	left: 24px;
+	font-size: 24px;
+    color: #ffffff;
+	margin: 0;
 `;
 
 export const Link = styled.a`

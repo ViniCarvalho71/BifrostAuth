@@ -3,8 +3,8 @@ import { Button, Link, LoginBox, PageContainer, Title } from "./style";
 
 function LoginPage() {
     return <PageContainer>
+        <Title>Bifrost Auth</Title>
         <LoginBox>
-            <Title>BifrostAuth</Title>
             <Input placeholder="seuemail@exemplo.com" type="email" width="300px" height="40px" />
             <Input placeholder="****** " type="password" width="300px" height="40px" />
             <Link>Esqueci minha senha</Link>
