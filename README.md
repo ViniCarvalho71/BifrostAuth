@@ -1,4 +1,4 @@
-# AuthSTI 🔐
+# BifrostAuth 🔐
 
 API de autenticação e autorização desenvolvida com foco em **arquitetura limpa**, **segurança** e **escalabilidade**.
 
@@ -8,7 +8,7 @@ API de autenticação e autorização desenvolvida com foco em **arquitetura lim
 
 ## 🎯 Sobre o projeto
 
-O `AuthSTI` é uma API para controle de identidade e acesso, com:
+O `BifrostAuth` é uma API para controle de identidade e acesso, com:
 
 - autenticação via `JWT`
 - autorização por `roles` e `permissions`
@@ -33,16 +33,16 @@ Este projeto evidencia capacidade de construir uma solução real de autenticaç
 
 ## 🏗️ Arquitetura da solução
 
-### `AuthSTI.API`
+### `BifrostAuth.API`
 Camada de entrada HTTP (controllers, configuração da aplicação e DI).
 
-### `AuthSTI.Application`
+### `BifrostAuth.Application`
 Regras de negócio, DTOs, interfaces e serviços.
 
-### `AuthSTI.Domain`
+### `BifrostAuth.Domain`
 Entidades e contratos centrais do domínio.
 
-### `AuthSTI.Infrastructure`
+### `BifrostAuth.Infrastructure`
 Mapeamentos NHibernate, sessão de banco e implementação do repositório.
 
 ---
@@ -117,20 +117,20 @@ Na raiz do repositório:
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project AuthSTI.API
+dotnet run --project BifrostAuth.API
 ```
 
-Configuração em `AuthSTI.API/appsettings.Development.json`:
+Configuração em `BifrostAuth.API/appsettings.Development.json`:
 
 ```json
 {
   "Jwt": {
     "Key": "<sua-chave-forte>",
-    "Issuer": "AuthSTI",
-    "Audience": "AuthSTI"
+    "Issuer": "BifrostAuth",
+    "Audience": "BifrostAuth"
   },
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Port=5432;Database=authsti;Username=postgres;Password=1234"
+    "DefaultConnection": "Server=localhost;Port=5432;Database=BifrostAuth;Username=postgres;Password=1234"
   }
 }
 ```

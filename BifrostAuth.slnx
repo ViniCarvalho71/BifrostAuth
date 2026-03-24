@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="BifrostAuth.API/BifrostAuth.API.csproj" Id="f6e4aad0-db77-4c1d-846b-ca4e587a6cf8" />
+  <Project Path="BifrostAuth.Application/BifrostAuth.Application.csproj" Id="a06fd721-9d6f-412e-9652-1ef04be4bd76" />
+  <Project Path="BifrostAuth.Domain/BifrostAuth.Domain.csproj" />
+  <Project Path="BifrostAuth.Infrastructure/BifrostAuth.Infrastructure.csproj" />
+</Solution>
