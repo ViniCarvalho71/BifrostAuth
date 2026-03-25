@@ -83,7 +83,7 @@ namespace BifrostAuth.Application.Sevices
                 }
 
                 var user = _repository.Query().FirstOrDefault(u => u.Email == email);
-                if (user == null || !_passwordHasher.Verify(user.PasswordHash, password))
+                if (user == null || !_passwordHasher.Verify(user.Password, password))
                 {
                     throw new Exception("Email ou senha inválidos");
                 }

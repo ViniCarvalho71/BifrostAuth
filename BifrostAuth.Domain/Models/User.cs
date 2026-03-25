@@ -12,7 +12,7 @@ namespace BifrostAuth.Models
 
         public virtual string Email { get; set; }
 
-        public virtual string PasswordHash { get; set; }
+        public virtual string Password { get; set; }
 
         public virtual bool IsActive { get; set; }
 

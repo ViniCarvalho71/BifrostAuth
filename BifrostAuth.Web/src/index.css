@@ -11,3 +11,14 @@ body,
   width: 100%;
   overflow: hidden;
 }
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

@@ -13,15 +13,21 @@ namespace BifrostAuth.Infrastructure.NHibernate.Mappings
 
             Map(x => x.Login)
                 .Length(100)
+                .Unique()
                 .Not.Nullable();
 
             Map(x => x.Email)
-                .Length(200)
+                .Length(200).
+                 Unique()
                 .Not.Nullable();
 
-            Map(x => x.PasswordHash)
+            Map(x => x.Password)
                 .Length(500)
                 .Not.Nullable();
+
+            Map(x => x.IsActive)
+               .Not.Nullable();
+
 
             HasMany(x => x.UserRoles)
                 .KeyColumn("UserId")

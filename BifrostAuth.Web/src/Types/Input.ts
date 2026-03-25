@@ -1,7 +1,6 @@
-export type InputProps = {
-     placeholder: string, 
-     type : string, 
-     name?: string,
-     width: string, 
-     height: string 
-}
+import type { InputHTMLAttributes } from "react";
+
+export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+	width: string;
+	height: string;
+};

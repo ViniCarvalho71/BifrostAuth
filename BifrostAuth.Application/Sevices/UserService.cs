@@ -35,7 +35,7 @@ namespace BifrostAuth.Application.Sevices
                 Id = x.Id,
                 Login = x.Login,
                 Email = x.Email,
-                PasswordHash = x.PasswordHash,
+                Password = x.Password,
                 IsActive = x.IsActive
             });
         }
@@ -52,7 +52,7 @@ namespace BifrostAuth.Application.Sevices
                 Id = dto.Id,
                 Login = dto.Login,
                 Email = dto.Email,
-                PasswordHash = _passwordHasher.Hash(dto.PasswordHash),
+                Password = _passwordHasher.Hash(dto.Password),
                 IsActive = dto.IsActive,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -91,7 +91,7 @@ namespace BifrostAuth.Application.Sevices
                 Id = entity.Id,
                 Login = entity.Login,
                 Email = entity.Email,
-                PasswordHash = entity.PasswordHash,
+                Password = entity.Password,
                 IsActive = entity.IsActive
             };
         }
