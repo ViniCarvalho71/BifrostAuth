@@ -1,6 +1,6 @@
 import type { Application, ApplicationCreateRequest } from "../Types/Application.ts";
 
-const URL_API = import.meta.env.VITE_API_URL as string;
+const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
 type ODataResponse<T> = {
 	value?: T[];

@@ -1,6 +1,6 @@
 import type { LoginRequest } from "../Types/Login";
 
-const URL_API = import.meta.env.VITE_API_URL as string;
+const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
 export async function Login(loginRequest: LoginRequest) {
     const resultado = await fetch(`${URL_API}/api/auth`, {

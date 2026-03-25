@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { isStoredTokenValid } from "../../Services/authService";
 import type { ProtectedRouteProps } from "../../Types/Route";

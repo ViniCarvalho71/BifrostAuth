@@ -6,6 +6,7 @@ using BifrostAuth.Domain.Repositories;
 using BifrostAuth.Infrastructure.NHibernate.SessionFactory;
 using BifrostAuth.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.HttpOverrides;
 using NHibernate;
 using Scalar.AspNetCore;
 
@@ -61,6 +62,11 @@ builder.Services.AddControllers().AddOData(opt =>
 
 var app = builder.Build();
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -68,12 +74,20 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("FrontendPolicy");
 
 app.UseAuthorization();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapControllers();
+
+app.MapFallbackToFile("index.html");
 
 app.Run();
