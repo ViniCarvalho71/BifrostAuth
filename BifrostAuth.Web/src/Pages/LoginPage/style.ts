@@ -13,7 +13,7 @@ export const PageContainer = styled.div`
 	background-repeat: no-repeat;
 `;
 
-export const LoginBox = styled.div`
+export const LoginBox = styled.form`
 	width: 100%;
 	max-width: 380px;
     height: 500px;
@@ -29,6 +29,13 @@ export const LoginBox = styled.div`
 
 	h2 {
 		margin: 0 0 8px;
+	}
+
+	h1 {
+		margin: 0 0 12px;
+		color: #9c6bff;
+		font-size: 34px;
+		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	}
 `;
 
@@ -46,6 +53,7 @@ export const Button = styled.button`
 	color: #b696ff;
 	font-size: 14px;
 	font-weight: 600;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	cursor: pointer;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 	transition: background-color 0.2s ease, transform 0.1s ease;

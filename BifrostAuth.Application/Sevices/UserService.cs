@@ -28,6 +28,18 @@ namespace BifrostAuth.Application.Sevices
             return ToDto(entity);
         }
 
+        public IQueryable<UserDto> Get()
+        {
+            return _repository.Query().Select(x => new UserDto
+            {
+                Id = x.Id,
+                Login = x.Login,
+                Email = x.Email,
+                PasswordHash = x.PasswordHash,
+                IsActive = x.IsActive
+            });
+        }
+
         public IReadOnlyCollection<UserDto> GetAll()
         {
             return _repository.Query().Select(ToDto).ToList();

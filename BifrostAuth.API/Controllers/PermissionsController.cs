@@ -1,6 +1,7 @@
 using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 using System;
 using System.Collections.Generic;
 
@@ -22,6 +23,13 @@ namespace BifrostAuth.API.Controllers
 
         [HttpGet("{id:guid}")]
         public ActionResult<PermissionDto> Get(Guid id) => Ok(_service.Get(id));
+
+        [HttpGet("getOData")]
+        [EnableQuery]
+        public IQueryable<PermissionDto> GetOData()
+        {
+            return _service.Get();
+        }
 
         [HttpPost]
         public IActionResult Create([FromBody] PermissionDto dto)

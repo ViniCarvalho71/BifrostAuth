@@ -5,6 +5,7 @@ using BifrostAuth.Application.Sevices;
 using BifrostAuth.Domain.Repositories;
 using BifrostAuth.Infrastructure.NHibernate.SessionFactory;
 using BifrostAuth.Infrastructure.Persistence.Repositories;
+using Microsoft.AspNetCore.OData;
 using NHibernate;
 using Scalar.AspNetCore;
 
@@ -15,6 +16,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionString 'DefaultConnection' não configurada.");
@@ -43,6 +53,9 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHash, PasswordHasher>();
+builder.Services.AddControllers().AddOData(opt =>
+    opt.Filter().Select().OrderBy().Count().Expand().SetMaxTop(100)
+);
 
 
 
@@ -56,6 +69,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("FrontendPolicy");
 
 app.UseAuthorization();
 

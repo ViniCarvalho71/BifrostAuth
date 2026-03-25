@@ -26,6 +26,16 @@ namespace BifrostAuth.Application.Sevices
             return ToDto(entity);
         }
 
+        public IQueryable<UserRoleDto> Get()
+        {
+            return _repository.Query().Select(x => new UserRoleDto
+            {
+                Id = x.Id,
+                UserId = x.UserId,
+                RoleId = x.RoleId
+            });
+        }
+
         public IReadOnlyCollection<UserRoleDto> GetAll()
         {
             return _repository.Query().Select(ToDto).ToList();

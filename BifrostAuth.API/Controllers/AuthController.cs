@@ -20,8 +20,8 @@ namespace BifrostAuth.API.Controllers
         {
             try
             {
-                var token = _authService.Login(loginDto.Email, loginDto.Password, loginDto.ClientId);
-                return Ok(token);
+                var response = _authService.Login(loginDto.Email, loginDto.Password, loginDto.ClientId);
+                return Ok(new { token = response} );
 
             }
             catch (Exception ex)

@@ -26,6 +26,20 @@ namespace BifrostAuth.Application.Sevices
             return ToDto(entity);
         }
 
+        public IQueryable<RefreshTokenDto> Get()
+        {
+            return _repository.Query().Select(x => new RefreshTokenDto
+            {
+                Id = x.Id,
+                UserId = x.UserId,
+                Token = x.Token,
+                ExpiresAt = x.ExpiresAt,
+                RevokedAt = x.RevokedAt,
+                ReplacedByToken = x.ReplacedByToken,
+                CreatedByIp = x.CreatedByIp
+            });
+        }
+
         public IReadOnlyCollection<RefreshTokenDto> GetAll()
         {
             return _repository.Query().Select(ToDto).ToList();

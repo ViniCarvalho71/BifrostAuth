@@ -1,6 +1,7 @@
 using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
 using System;
 using System.Collections.Generic;
 
@@ -23,6 +24,13 @@ namespace BifrostAuth.API.Controllers
         [HttpGet("{id:guid}")]
         public ActionResult<ApplicationDto> Get(Guid id) => Ok(_service.Get(id));
 
+        [HttpGet("getOData")]
+        [EnableQuery]
+        public IQueryable<ApplicationDto> GetOData()
+        {
+            return _service.Get(); 
+        }
+
         [HttpPost]
         public IActionResult Create([FromBody] ApplicationDto dto)
         {
@@ -44,5 +52,7 @@ namespace BifrostAuth.API.Controllers
             _service.Delete(id);
             return NoContent();
         }
+
+
     }
 }
