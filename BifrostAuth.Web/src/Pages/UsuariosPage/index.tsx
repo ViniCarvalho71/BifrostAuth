@@ -506,7 +506,6 @@ function UsuariosPage() {
                                 <label htmlFor="editar-ativo">Usuario ativo</label>
                             </CheckboxRow>
 
-                            <Subtitle>A senha nao pode ser alterada na edicao.</Subtitle>
                             {editError && <Subtitle>{editError}</Subtitle>}
 
                             <ModalActions>

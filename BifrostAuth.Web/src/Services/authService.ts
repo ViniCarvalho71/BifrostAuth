@@ -61,6 +61,22 @@ function isTokenExpired(payload: { exp?: number }): boolean {
     return payload.exp <= nowInSeconds;
 }
 
+function isAudienceValid(audience: string | string[] | undefined, expectedAudience: string): boolean {
+    if (!expectedAudience) {
+        return false;
+    }
+
+    if (typeof audience === "string") {
+        return audience === expectedAudience;
+    }
+
+    if (Array.isArray(audience)) {
+        return audience.includes(expectedAudience);
+    }
+
+    return false;
+}
+
 export function getAuthToken(): string | null {
     return localStorage.getItem(TOKEN_STORAGE_KEY);
 }
@@ -75,8 +91,9 @@ export function clearAuthToken(): void {
 
 export async function isJwtValid(token: string): Promise<boolean> {
     const secret = import.meta.env.VITE_JWT_SECRET as string | undefined;
+    const clientId = (import.meta.env.CLIENT_ID as string | undefined)?.trim();
 
-    if (!secret || !token) {
+    if (!secret || !clientId || !token) {
         return false;
     }
 
@@ -86,9 +103,9 @@ export async function isJwtValid(token: string): Promise<boolean> {
     }
 
     const payloadJson = decodeBase64Url(parts[1]);
-    const payload = safeJsonParse<{ exp?: number }>(payloadJson);
+    const payload = safeJsonParse<{ exp?: number; aud?: string | string[] }>(payloadJson);
 
-    if (!payload || isTokenExpired(payload)) {
+    if (!payload || isTokenExpired(payload) || !isAudienceValid(payload.aud, clientId)) {
         return false;
     }
 

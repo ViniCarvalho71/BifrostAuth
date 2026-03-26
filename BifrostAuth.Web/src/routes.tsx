@@ -4,6 +4,7 @@ import UsuariosPage from './Pages/UsuariosPage'
 import ProtectedRoute from './Components/ProtectedRoute'
 import SidebarLayout from './Components/SidebarLayout'
 import DashboardPage from './Pages/DashboardPage'
+import ApplicationPage from './Pages/ApplicationPage'
 
 function AppRoutes() {
 	return (
@@ -22,6 +23,7 @@ function AppRoutes() {
 				>
 					<Route path="/painel" element={<DashboardPage />} />
 					<Route path="/usuarios" element={<UsuariosPage />} />
+					<Route path="/aplicacoes" element={<ApplicationPage />} />
 				</Route>
 				<Route path="*" element={<Navigate to="/login" replace />} />
 			</Routes>

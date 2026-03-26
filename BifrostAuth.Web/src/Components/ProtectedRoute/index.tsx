@@ -3,6 +3,8 @@ import { Navigate } from "react-router-dom";
 import { isStoredTokenValid } from "../../Services/authService";
 import type { ProtectedRouteProps } from "../../Types/Route";
 
+const CLIENT_ID = (import.meta.env.CLIENT_ID as string | undefined)?.trim() ?? "";
+const AUTHORIZE_REDIRECT = `/authorize?client_id=${encodeURIComponent(CLIENT_ID)}`;
 
 
 function ProtectedRoute({ children }: ProtectedRouteProps) {
@@ -30,7 +32,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     if (!isValid) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to={AUTHORIZE_REDIRECT} replace />;
     }
 
     return <>{children}</>;
