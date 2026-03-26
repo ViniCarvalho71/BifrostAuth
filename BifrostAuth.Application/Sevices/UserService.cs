@@ -1,10 +1,12 @@
 using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
+using BifrostAuth.Domain.Models;
 using BifrostAuth.Domain.Repositories;
 using BifrostAuth.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace BifrostAuth.Application.Sevices
 {
@@ -12,11 +14,38 @@ namespace BifrostAuth.Application.Sevices
     {
         private readonly IRepository<User> _repository;
         private readonly IPasswordHash _passwordHasher;
+        private readonly IApplicationService _applicationService;
+        private readonly IUserApplicationService _userApplicationService;
+        private readonly IEmailService _emailService;
 
-        public UserService(IRepository<User> repository, IPasswordHash passwordHasher)
+        public UserService(IRepository<User> repository, IPasswordHash passwordHasher, IApplicationService applicationService, IUserApplicationService userApplicationService, IEmailService emailService)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
+            _applicationService = applicationService;
+            _userApplicationService = userApplicationService;
+            _emailService = emailService;
+        }
+
+        public static void ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+                throw new Exception("A senha não pode ser vazia");
+
+            if (password.Length < 8)
+                throw new Exception("A senha deve ter pelo menos 8 caracteres");
+
+            if (!Regex.IsMatch(password, "[A-Z]"))
+                throw new Exception("A senha deve conter pelo menos uma letra maiúscula");
+
+            if (!Regex.IsMatch(password, "[a-z]"))
+                throw new Exception("A senha deve conter pelo menos uma letra minúscula");
+
+            if (!Regex.IsMatch(password, "[0-9]"))
+                throw new Exception("A senha deve conter pelo menos um número");
+
+            if (!Regex.IsMatch(password, "[^a-zA-Z0-9]"))
+                throw new Exception("A senha deve conter pelo menos um caractere especial");
         }
 
         public UserDto Get(Guid id)
@@ -51,6 +80,8 @@ namespace BifrostAuth.Application.Sevices
 
             if(user != null) throw new Exception($"Já existe um usuário com o email {dto.Email}.");
 
+            ValidatePassword(dto.Password);
+
             var entity = new User
             {
                 Id = dto.Id,
@@ -64,6 +95,8 @@ namespace BifrostAuth.Application.Sevices
 
             _repository.Save(entity);
         }
+
+
 
         public void Update(UserDto dto)
         {
@@ -98,6 +131,43 @@ namespace BifrostAuth.Application.Sevices
                 Password = entity.Password,
                 IsActive = entity.IsActive
             };
+        }
+
+        public void Register(RegisterUserDto dto)
+        {
+            var user = _repository.Query().FirstOrDefault(x => x.Email == dto.Email);
+
+            if (user != null) throw new Exception($"Já existe um usuário com o email {dto.Email}.");
+
+            ValidatePassword(dto.Password);
+
+            var application = _applicationService.GetAll().FirstOrDefault(a => a.ClientId == dto.ClientId);
+
+            if (application != null) throw new Exception("Aplicação inválida");
+
+            var entity = new UserDto
+            {
+                Login = dto.Login,
+                Email = dto.Email,
+                Password = _passwordHasher.Hash(dto.Password),
+                IsActive = false,
+            };
+
+            Save(entity);
+
+            var createdUser = _repository.Query().FirstOrDefault(x => x.Email == dto.Email); 
+
+            if (createdUser == null) throw new Exception("Erro ao criar usuário.");
+
+            var userApplication = new UserApplicationDto
+            {
+                ApplicationId = application.Id,
+                UserId = createdUser.Id
+            };
+
+            _userApplicationService.Save(userApplication);
+
+            _emailService.SendEmail(dto.Email, "Bem-vindo ao BifrostAuth", "Clique no link para confimar o seu email");
         }
     }
 }
