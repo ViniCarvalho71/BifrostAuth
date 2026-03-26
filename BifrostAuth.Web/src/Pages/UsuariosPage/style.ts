@@ -119,11 +119,24 @@ export const ModalOverlay = styled.div`
 
 export const Modal = styled.div`
 	width: 100%;
-	max-width: 620px;
+	max-width: 1080px;
 	background: #ffffff;
 	border-radius: 12px;
 	padding: 20px;
 	box-shadow: 0 18px 36px rgba(0, 0, 0, 0.25);
+`;
+
+export const ModalBody = styled.div`
+	max-height: 52vh;
+	overflow: auto;
+	padding-right: 4px;
+`;
+
+export const ApplicationBindingHint = styled.p`
+	margin: 0 0 10px;
+	font-size: 13px;
+	color: #4b5563;
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 `;
 
 export const ModalTitle = styled.h2`

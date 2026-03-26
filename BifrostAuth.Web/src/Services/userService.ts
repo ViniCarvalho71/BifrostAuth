@@ -4,6 +4,14 @@ const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? 
 
 type ODataResponse<T> = {
 	value?: T[];
+	"@odata.count"?: number;
+};
+
+type ErrorBody = {
+	message?: string;
+	error?: string;
+	title?: string;
+	detail?: string;
 };
 
 function getAuthHeaders(): HeadersInit {
@@ -15,11 +23,33 @@ function getAuthHeaders(): HeadersInit {
 	};
 }
 
+async function readErrorMessage(resultado: Response): Promise<string | null> {
+	const rawBody = await resultado.text();
+	if (!rawBody) {
+		return null;
+	}
+
+	try {
+		const parsed = JSON.parse(rawBody) as ErrorBody;
+		return parsed.message ?? parsed.error ?? parsed.title ?? parsed.detail ?? rawBody;
+	} catch {
+		return rawBody;
+	}
+}
+
 export async function getUsers() {
 	const resultado = await fetch(`${URL_API}/api/Users`, {
 		method: "GET",
 		headers: getAuthHeaders()
 	});
+
+	if (resultado.status < 200 || resultado.status >= 300) {
+		return {
+			status: resultado.status,
+			data: [] as User[],
+			errorMessage: await readErrorMessage(resultado)
+		};
+	}
 
 	const data = resultado.status === 204 ? [] : await resultado.json();
 
@@ -36,19 +66,23 @@ export async function getOData(query?: string) {
 		headers: getAuthHeaders()
 	});
 
-	if (resultado.status !== 200) {
+	if (resultado.status < 200 || resultado.status >= 300) {
 		return {
 			status: resultado.status,
-			data: [] as User[]
+			data: [] as User[],
+			totalCount: 0,
+			errorMessage: await readErrorMessage(resultado)
 		};
 	}
 
 	const rawData = await resultado.json();
-	const data = (rawData as ODataResponse<User>).value ?? (rawData as User[]);
+	const typed = rawData as ODataResponse<User>;
+	const data = typed.value ?? (rawData as User[]);
 
 	return {
 		status: resultado.status,
-		data
+		data,
+		totalCount: typed["@odata.count"] ?? data.length
 	};
 }
 
@@ -57,6 +91,14 @@ export async function getUserById(id: string) {
 		method: "GET",
 		headers: getAuthHeaders()
 	});
+
+	if (resultado.status < 200 || resultado.status >= 300) {
+		return {
+			status: resultado.status,
+			data: null,
+			errorMessage: await readErrorMessage(resultado)
+		};
+	}
 
 	const data = resultado.status === 204 ? null : await resultado.json();
 
@@ -72,6 +114,14 @@ export async function createUser(user: UserCreateRequest) {
 		headers: getAuthHeaders(),
 		body: JSON.stringify(user)
 	});
+
+	if (resultado.status < 200 || resultado.status >= 300) {
+		return {
+			status: resultado.status,
+			data: null,
+			errorMessage: await readErrorMessage(resultado)
+		};
+	}
 
 	let data: User | null = null;
 	if (resultado.status !== 204) {
@@ -94,6 +144,14 @@ export async function updateUser(user: User) {
 		body: JSON.stringify(user)
 	});
 
+	if (resultado.status < 200 || resultado.status >= 300) {
+		return {
+			status: resultado.status,
+			data: null,
+			errorMessage: await readErrorMessage(resultado)
+		};
+	}
+
 	let data: User | null = null;
 	if (resultado.status !== 204) {
 		const rawBody = await resultado.text();
@@ -113,6 +171,13 @@ export async function deleteUser(id: string) {
 		method: "DELETE",
 		headers: getAuthHeaders()
 	});
+
+	if (resultado.status < 200 || resultado.status >= 300) {
+		return {
+			status: resultado.status,
+			errorMessage: await readErrorMessage(resultado)
+		};
+	}
 
 	return {
 		status: resultado.status

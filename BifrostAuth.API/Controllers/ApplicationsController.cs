@@ -35,7 +35,7 @@ namespace BifrostAuth.API.Controllers
         public IActionResult Create([FromBody] ApplicationDto dto)
         {
             _service.Save(dto);
-            return Ok();
+            return Created();
         }
 
         [HttpPut("{id:guid}")]

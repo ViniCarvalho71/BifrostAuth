@@ -5,6 +5,8 @@ import ProtectedRoute from './Components/ProtectedRoute'
 import SidebarLayout from './Components/SidebarLayout'
 import DashboardPage from './Pages/DashboardPage'
 import ApplicationPage from './Pages/ApplicationPage'
+import PermissoesPage from './Pages/PermissoesPage'
+import RolesPage from './Pages/RolesPage'
 
 function AppRoutes() {
 	return (
@@ -24,6 +26,8 @@ function AppRoutes() {
 					<Route path="/painel" element={<DashboardPage />} />
 					<Route path="/usuarios" element={<UsuariosPage />} />
 					<Route path="/aplicacoes" element={<ApplicationPage />} />
+					<Route path="/permissoes" element={<PermissoesPage />} />
+					<Route path="/cargos" element={<RolesPage />} />
 				</Route>
 				<Route path="*" element={<Navigate to="/login" replace />} />
 			</Routes>

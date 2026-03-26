@@ -5,9 +5,11 @@ import { Login } from "../../Services/loginService";
 import { saveAuthToken } from "../../Services/authService";
 import { getApplicationByClientId } from "../../Services/applicationService";
 import type { LoginRequest } from "../../Types/Login";
+import { queueAlertForNextPage, useAlert } from "../../Contexts/AlertContext";
 
 function LoginPage() {
     const [applicationName, setApplicationName] = useState("Acessando...");
+    const { showAlert } = useAlert();
 
     useEffect(() => {
         const searchParams = new URLSearchParams(window.location.search);
@@ -44,6 +46,30 @@ function LoginPage() {
             clientid: searchParams.get("client_id") ?? ""
         };
 
+        if (!loginPayload.email.trim() || !loginPayload.password.trim()) {
+            showAlert({
+                type: "warning",
+                message: "Preencha e-mail e senha para continuar."
+            });
+            return;
+        }
+
+        if (!loginPayload.email.includes("@")) {
+            showAlert({
+                type: "warning",
+                message: "Informe um e-mail valido."
+            });
+            return;
+        }
+
+        if (!loginPayload.clientid.trim()) {
+            showAlert({
+                type: "warning",
+                message: "Client ID nao informado na URL."
+            });
+            return;
+        }
+
         const redirectUrl = searchParams.get("redirect_url");
         
         const resultado = await Login(loginPayload);
@@ -51,6 +77,10 @@ function LoginPage() {
         if(resultado.status === 200){
             if (resultado.token) {
                 saveAuthToken(resultado.token);
+                queueAlertForNextPage({
+                    type: "success",
+                    message: "Login realizado com sucesso."
+                });
                 if (redirectUrl) {
                     window.location.assign(redirectUrl);
                     return;
@@ -60,12 +90,15 @@ function LoginPage() {
             }
             
         } else {
-            alert("Falha no login. Verifique suas credenciais.");
+            showAlert({
+                type: "error",
+                message: resultado.errorMessage ?? "Falha no login. Verifique suas credenciais."
+            });
         }
     }
     return <PageContainer>
         <Title>Bifrost Auth</Title>
-        <LoginBox action="post" onSubmit={(e) => submitForm(e)}>
+        <LoginBox action="post" onSubmit={(e) => submitForm(e)} noValidate>
                 <h1>{applicationName}</h1>
                 <Input placeholder="seuemail@exemplo.com" type="email" name="email" width="300px" height="40px" />
                 <Input placeholder="****** " type="password" name="senha" width="300px" height="40px" />

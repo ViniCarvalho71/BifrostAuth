@@ -2,6 +2,27 @@ import type { LoginRequest } from "../Types/Login";
 
 const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
+type ErrorBody = {
+    message?: string;
+    error?: string;
+    title?: string;
+    detail?: string;
+};
+
+async function readErrorMessage(resultado: Response): Promise<string | null> {
+    const rawBody = await resultado.text();
+    if (!rawBody) {
+        return null;
+    }
+
+    try {
+        const parsed = JSON.parse(rawBody) as ErrorBody;
+        return parsed.message ?? parsed.error ?? parsed.title ?? parsed.detail ?? rawBody;
+    } catch {
+        return rawBody;
+    }
+}
+
 export async function Login(loginRequest: LoginRequest) {
     const resultado = await fetch(`${URL_API}/api/auth`, {
         method: "POST",
@@ -14,11 +35,20 @@ export async function Login(loginRequest: LoginRequest) {
             clientid: loginRequest.clientid
         })
     });
-    let token = resultado.status === 200 ? (await resultado.json()).token : null;
+
+    if (resultado.status !== 200) {
+        return {
+            status: resultado.status,
+            token: null,
+            errorMessage: await readErrorMessage(resultado)
+        };
+    }
+
+    const token = (await resultado.json()).token as string | null;
 
     return {
         status: resultado.status,
-        token: token
+        token
     }
 }
 

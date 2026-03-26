@@ -20,19 +20,20 @@ import {
     ViewLabel,
     ViewValue
 } from "./style";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import DataTable, { type DataTableColumn } from "../../Components/DataTable";
 import type { Application, ApplicationCreateRequest } from "../../Types/Application";
 import {
     createApplication,
     deleteApplication,
+    getOData as getApplicationsOData,
     getApplicationById,
-    getApplications,
     updateApplication
 } from "../../Services/applicationService";
 import { FaEdit, FaEye, FaPlus, FaTrash } from "react-icons/fa";
 import Input from "../../Components/Input";
 import ConfirmationModal from "../../Components/ConfirmationModal";
+import { useAlert } from "../../Contexts/AlertContext";
 
 type ApplicationEditForm = {
     name: string;
@@ -42,13 +43,21 @@ type ApplicationEditForm = {
     isActive: boolean;
 };
 
+function isValidHttpUrl(value: string): boolean {
+    try {
+        const parsed = new URL(value);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+        return false;
+    }
+}
+
 function ApplicationPage() {
-    const [applications, setApplications] = useState<Application[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { showAlert } = useAlert();
+    const [tableRefreshTrigger, setTableRefreshTrigger] = useState(0);
     const [errorMessage, setErrorMessage] = useState("");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
-    const [createError, setCreateError] = useState("");
     const [actionError, setActionError] = useState("");
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -65,7 +74,6 @@ function ApplicationPage() {
         isActive: true
     });
     const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
-    const [editError, setEditError] = useState("");
     const [createForm, setCreateForm] = useState<ApplicationCreateRequest>({
         name: "",
         clientId: "",
@@ -74,29 +82,7 @@ function ApplicationPage() {
         isActive: true
     });
 
-    const loadApplications = async () => {
-        setIsLoading(true);
-        setErrorMessage("");
-
-        const resultado = await getApplications();
-
-        if (resultado.status < 200 || resultado.status >= 300) {
-            setApplications([]);
-            setErrorMessage("Nao foi possivel carregar as aplicacoes.");
-            setIsLoading(false);
-            return;
-        }
-
-        setApplications(resultado.data);
-        setIsLoading(false);
-    };
-
-    useEffect(() => {
-        loadApplications();
-    }, []);
-
     const handleCreate = () => {
-        setCreateError("");
         setCreateForm({
             name: "",
             clientId: "",
@@ -113,26 +99,40 @@ function ApplicationPage() {
         }
 
         setIsCreateModalOpen(false);
-        setCreateError("");
     };
 
     const handleCreateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setCreateError("");
+
+        if (!createForm.name.trim() || !createForm.clientId.trim() || !createForm.clientSecret.trim() || !createForm.redirectUrl.trim()) {
+            const message = "Preencha todos os campos obrigatorios.";
+            showAlert({ type: "warning", message });
+            return;
+        }
+
+        if (!isValidHttpUrl(createForm.redirectUrl)) {
+            const message = "Informe uma Redirect URL valida (http ou https).";
+            showAlert({ type: "warning", message });
+            return;
+        }
+
         setIsSubmittingCreate(true);
 
         try {
             const resultado = await createApplication(createForm);
 
-            if (resultado.status < 200 || resultado.status >= 300) {
-                setCreateError("Nao foi possivel criar a aplicacao.");
+            if (resultado.status !== 201) {
+                const message = resultado.errorMessage ?? "Nao foi possivel criar a aplicação.";
+                showAlert({ type: "error", message });
                 return;
             }
 
             setIsCreateModalOpen(false);
-            await loadApplications();
+            showAlert({ type: "success", message: "Aplicação criada com sucesso." });
+            setTableRefreshTrigger((previous) => previous + 1);
         } catch {
-            setCreateError("Nao foi possivel criar a aplicacao.");
+            const message = "Nao foi possivel criar a aplicação.";
+            showAlert({ type: "error", message });
         } finally {
             setIsSubmittingCreate(false);
         }
@@ -146,13 +146,17 @@ function ApplicationPage() {
             const resultado = await getApplicationById(id);
 
             if (resultado.status < 200 || resultado.status >= 300 || !resultado.data) {
-                setActionError("Nao foi possivel carregar os detalhes da aplicacao.");
+                const message = resultado.errorMessage ?? "Nao foi possivel carregar os detalhes da aplicação.";
+                setActionError(message);
+                showAlert({ type: "error", message });
                 return null;
             }
 
             return resultado.data;
         } catch {
-            setActionError("Nao foi possivel carregar os detalhes da aplicacao.");
+            const message = "Nao foi possivel carregar os detalhes da aplicação.";
+            setActionError(message);
+            showAlert({ type: "error", message });
             return null;
         } finally {
             setIsActionLoading(false);
@@ -176,7 +180,6 @@ function ApplicationPage() {
         }
 
         setSelectedApplication(loadedApplication);
-        setEditError("");
         setEditForm({
             name: loadedApplication.name,
             clientId: loadedApplication.clientId,
@@ -213,15 +216,20 @@ function ApplicationPage() {
             const resultado = await deleteApplication(deleteTargetApplication.id);
 
             if (resultado.status < 200 || resultado.status >= 300) {
-                setActionError("Nao foi possivel excluir a aplicacao.");
+                const message = resultado.errorMessage ?? "Nao foi possivel excluir a aplicação.";
+                setActionError(message);
+                showAlert({ type: "error", message });
                 return;
             }
 
             setIsDeleteModalOpen(false);
             setDeleteTargetApplication(null);
-            await loadApplications();
+            showAlert({ type: "success", message: "Aplicação excluida com sucesso." });
+            setTableRefreshTrigger((previous) => previous + 1);
         } catch {
-            setActionError("Nao foi possivel excluir a aplicacao.");
+            const message = "Nao foi possivel excluir a aplicação.";
+            setActionError(message);
+            showAlert({ type: "error", message });
         } finally {
             setIsDeletingApplication(false);
         }
@@ -242,7 +250,6 @@ function ApplicationPage() {
         }
 
         setIsEditModalOpen(false);
-        setEditError("");
         setSelectedApplication(null);
     };
 
@@ -250,11 +257,23 @@ function ApplicationPage() {
         event.preventDefault();
 
         if (!selectedApplication) {
-            setEditError("Aplicacao nao encontrada.");
+            const message = "Aplicação nao encontrada.";
+            showAlert({ type: "warning", message });
             return;
         }
 
-        setEditError("");
+        if (!editForm.name.trim() || !editForm.clientId.trim() || !editForm.clientSecret.trim() || !editForm.redirectUrl.trim()) {
+            const message = "Preencha todos os campos obrigatorios para salvar.";
+            showAlert({ type: "warning", message });
+            return;
+        }
+
+        if (!isValidHttpUrl(editForm.redirectUrl)) {
+            const message = "Informe uma Redirect URL valida (http ou https).";
+            showAlert({ type: "warning", message });
+            return;
+        }
+
         setIsSubmittingEdit(true);
 
         try {
@@ -270,15 +289,18 @@ function ApplicationPage() {
             const resultado = await updateApplication(payload);
 
             if (resultado.status < 200 || resultado.status >= 300) {
-                setEditError("Nao foi possivel atualizar a aplicacao.");
+                const message = resultado.errorMessage ?? "Nao foi possivel atualizar a aplicação.";
+                showAlert({ type: "error", message });
                 return;
             }
 
             setIsEditModalOpen(false);
             setSelectedApplication(null);
-            await loadApplications();
+            showAlert({ type: "success", message: "Aplicação atualizada com sucesso." });
+            setTableRefreshTrigger((previous) => previous + 1);
         } catch {
-            setEditError("Nao foi possivel atualizar a aplicacao.");
+            const message = "Nao foi possivel atualizar a aplicação.";
+            showAlert({ type: "error", message });
         } finally {
             setIsSubmittingEdit(false);
         }
@@ -323,7 +345,7 @@ function ApplicationPage() {
                 <ActionsGroup>
                     <ActionButton
                         type="button"
-                        aria-label="Visualizar aplicacao"
+                        aria-label="Visualizar aplicação"
                         $variant="view"
                         onClick={() => handleView(application)}
                     >
@@ -331,7 +353,7 @@ function ApplicationPage() {
                     </ActionButton>
                     <ActionButton
                         type="button"
-                        aria-label="Editar aplicacao"
+                        aria-label="Editar aplicação"
                         $variant="edit"
                         onClick={() => handleEdit(application)}
                     >
@@ -339,7 +361,7 @@ function ApplicationPage() {
                     </ActionButton>
                     <ActionButton
                         type="button"
-                        aria-label="Excluir aplicacao"
+                        aria-label="Excluir aplicação"
                         $variant="danger"
                         onClick={() => handleDelete(application)}
                     >
@@ -353,27 +375,34 @@ function ApplicationPage() {
     return (
         <Page>
             <Header>
-                <Title>Aplicacoes</Title>
+                <Title>Aplicações</Title>
                 <CreateButton type="button" onClick={handleCreate}>
                     <FaPlus size={12} />
-                    Nova Aplicacao
+                    Nova Aplicação
                 </CreateButton>
             </Header>
             {errorMessage && <Subtitle>{errorMessage}</Subtitle>}
             {actionError && <Subtitle>{actionError}</Subtitle>}
             <DataTable
                 columns={columns}
-                data={applications}
+                searchableFields={["name", "clientId", "redirectUrl"]}
+                searchPlaceholder="Pesquisar aplicações..."
+                oDataFetcher={getApplicationsOData}
+                refreshTrigger={tableRefreshTrigger}
+                onFetchError={(message) => {
+                    setErrorMessage(message);
+                    showAlert({ type: "error", message });
+                }}
                 rowKey={(application) => application.id}
-                emptyMessage={isLoading ? "Carregando aplicacoes..." : "Nenhuma aplicacao cadastrada."}
+                emptyMessage="Nenhuma aplicação cadastrada."
             />
 
             {isCreateModalOpen && (
                 <ModalOverlay onClick={handleCloseCreateModal}>
                     <Modal onClick={(event) => event.stopPropagation()}>
-                        <ModalTitle>Nova Aplicacao</ModalTitle>
+                        <ModalTitle>Nova Aplicação</ModalTitle>
 
-                        <form onSubmit={handleCreateSubmit}>
+                        <form onSubmit={handleCreateSubmit} noValidate>
                             <InputLabel htmlFor="nova-aplicacao-nome">Nome</InputLabel>
                             <Input
                                 id="nova-aplicacao-nome"
@@ -420,7 +449,7 @@ function ApplicationPage() {
                             <Input
                                 id="nova-aplicacao-redirect-url"
                                 type="url"
-                                placeholder="https://sua-aplicacao/callback"
+                                placeholder="https://sua-aplicação/callback"
                                 width="100%"
                                 height="40px"
                                 value={createForm.redirectUrl}
@@ -439,10 +468,8 @@ function ApplicationPage() {
                                         setCreateForm((previous) => ({ ...previous, isActive: event.target.checked }))
                                     }
                                 />
-                                <label htmlFor="aplicacao-ativa">Aplicacao ativa</label>
+                                <label htmlFor="aplicacao-ativa">Aplicação ativa</label>
                             </CheckboxRow>
-
-                            {createError && <Subtitle>{createError}</Subtitle>}
 
                             <ModalActions>
                                 <SecondaryButton type="button" onClick={handleCloseCreateModal}>
@@ -460,7 +487,7 @@ function ApplicationPage() {
             {isViewModalOpen && selectedApplication && (
                 <ModalOverlay onClick={handleCloseViewModal}>
                     <Modal onClick={(event) => event.stopPropagation()}>
-                        <ModalTitle>Visualizar Aplicacao</ModalTitle>
+                        <ModalTitle>Visualizar Aplicação</ModalTitle>
 
                         <ViewGrid>
                             <ViewItem>
@@ -501,9 +528,9 @@ function ApplicationPage() {
             {isEditModalOpen && selectedApplication && (
                 <ModalOverlay onClick={handleCloseEditModal}>
                     <Modal onClick={(event) => event.stopPropagation()}>
-                        <ModalTitle>Editar Aplicacao</ModalTitle>
+                        <ModalTitle>Editar Aplicação</ModalTitle>
 
-                        <form onSubmit={handleEditSubmit}>
+                        <form onSubmit={handleEditSubmit} noValidate>
                             <InputLabel htmlFor="editar-aplicacao-nome">Nome</InputLabel>
                             <Input
                                 id="editar-aplicacao-nome"
@@ -550,7 +577,7 @@ function ApplicationPage() {
                             <Input
                                 id="editar-aplicacao-redirect-url"
                                 type="url"
-                                placeholder="https://sua-aplicacao/callback"
+                                placeholder="https://sua-aplicação/callback"
                                 width="100%"
                                 height="40px"
                                 value={editForm.redirectUrl}
@@ -569,10 +596,8 @@ function ApplicationPage() {
                                         setEditForm((previous) => ({ ...previous, isActive: event.target.checked }))
                                     }
                                 />
-                                <label htmlFor="editar-aplicacao-ativa">Aplicacao ativa</label>
+                                <label htmlFor="editar-aplicacao-ativa">Aplicação ativa</label>
                             </CheckboxRow>
-
-                            {editError && <Subtitle>{editError}</Subtitle>}
 
                             <ModalActions>
                                 <SecondaryButton type="button" onClick={handleCloseEditModal}>
@@ -589,11 +614,11 @@ function ApplicationPage() {
 
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
-                title="Excluir aplicacao"
+                title="Excluir aplicação"
                 message={
                     deleteTargetApplication
-                        ? `Tem certeza que deseja excluir a aplicacao ${deleteTargetApplication.name}?`
-                        : "Tem certeza que deseja excluir esta aplicacao?"
+                    ? `Tem certeza que deseja excluir a aplicação ${deleteTargetApplication.name}?`
+                    : "Tem certeza que deseja excluir esta aplicação?"
                 }
                 confirmText="Excluir"
                 cancelText="Cancelar"

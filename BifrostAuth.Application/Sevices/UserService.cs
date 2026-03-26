@@ -47,6 +47,10 @@ namespace BifrostAuth.Application.Sevices
 
         public void Save(UserDto dto)
         {
+            var user = _repository.Query().FirstOrDefault(x => x.Email == dto.Email);
+
+            if(user != null) throw new Exception($"Já existe um usuário com o email {dto.Email}.");
+
             var entity = new User
             {
                 Id = dto.Id,

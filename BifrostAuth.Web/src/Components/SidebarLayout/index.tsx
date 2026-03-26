@@ -42,8 +42,10 @@ function SidebarLayout() {
             <SidebarLink to="/painel" end>
               Inicio
             </SidebarLink>
-            <SidebarLink to="/usuarios">Usuarios</SidebarLink>
-            <SidebarLink to="/aplicacoes">Aplicacoes</SidebarLink>
+            <SidebarLink to="/usuarios">Usuários</SidebarLink>
+            <SidebarLink to="/aplicacoes">Aplicações</SidebarLink>
+            <SidebarLink to="/permissoes">Permissões</SidebarLink>
+            <SidebarLink to="/cargos">Cargos</SidebarLink>
           </Nav>
           <TopBar>
             <LogoutButton type="button" onClick={logout}>
@@ -69,10 +71,16 @@ function SidebarLayout() {
               Inicio
             </MobileLink>
             <MobileLink to="/usuarios" onClick={closeMobileMenu}>
-              Usuarios
+              Usuários
             </MobileLink>
             <MobileLink to="/aplicacoes" onClick={closeMobileMenu}>
               Aplicacoes
+            </MobileLink>
+            <MobileLink to="/permissoes" onClick={closeMobileMenu}>
+              Permissões
+            </MobileLink>
+            <MobileLink to="/cargos" onClick={closeMobileMenu}>
+              Cargos
             </MobileLink>
             <LogoutButton type="button" onClick={logout}>
               Sair
