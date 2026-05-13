@@ -1,5 +1,6 @@
 using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using System;

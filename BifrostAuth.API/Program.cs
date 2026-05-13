@@ -54,6 +54,7 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHash, PasswordHasher>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddControllers().AddOData(opt =>
     opt.Filter().Select().OrderBy().Count().Expand().SetMaxTop(100)
 );

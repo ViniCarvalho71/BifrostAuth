@@ -39,6 +39,17 @@ import {
     getUserApplicationsByUserId
 } from "../../Services/userApplicationService";
 import type { UserApplication } from "../../Types/UserApplication";
+import type { Role } from "../../Types/Role";
+import { getRoles } from "../../Services/roleService";
+import type { UserRole } from "../../Types/UserRole";
+import {
+    createUserRole,
+    deleteUserRole,
+    getUserRolesByUserId
+} from "../../Services/userRoleService";
+import type { Permission } from "../../Types/Permission";
+import { getPermissions } from "../../Services/permissionService";
+import { getRolePermissionsByRoleId } from "../../Services/rolePermissionService";
 
 type UserEditForm = {
     email: string;
@@ -46,19 +57,24 @@ type UserEditForm = {
     isActive: boolean;
 };
 
-type UserFormTabId = "cadastro" | "aplicacoes";
+type UserFormTabId = "cadastro" | "aplicacoes" | "cargos";
 
 function UsuariosPage() {
     const { showAlert } = useAlert();
     const formTabs: FormSideBarTab[] = [
         { id: "cadastro", label: "Cadastro" },
-        { id: "aplicacoes", label: "Aplicações" }
+        { id: "aplicacoes", label: "Aplicações" },
+        { id: "cargos", label: "Cargos" }
     ];
     const [users, setUsers] = useState<User[]>([]);
     const [applications, setApplications] = useState<Application[]>([]);
     const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+    const [roles, setRoles] = useState<Role[]>([]);
+    const [isLoadingRoles, setIsLoadingRoles] = useState(false);
     const [createSelectedApplicationIds, setCreateSelectedApplicationIds] = useState<string[]>([]);
     const [editSelectedApplicationIds, setEditSelectedApplicationIds] = useState<string[]>([]);
+    const [createSelectedRoleIds, setCreateSelectedRoleIds] = useState<string[]>([]);
+    const [editSelectedRoleIds, setEditSelectedRoleIds] = useState<string[]>([]);
     const [createActiveTab, setCreateActiveTab] = useState<UserFormTabId>("cadastro");
     const [editActiveTab, setEditActiveTab] = useState<UserFormTabId>("cadastro");
     const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +89,13 @@ function UsuariosPage() {
     const [isDeletingUser, setIsDeletingUser] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isRolePermissionsModalOpen, setIsRolePermissionsModalOpen] = useState(false);
+    const [rolePermissionsTarget, setRolePermissionsTarget] = useState<Role | null>(null);
+    const [rolePermissions, setRolePermissions] = useState<Permission[]>([]);
+    const [rolePermissionsError, setRolePermissionsError] = useState("");
+    const [isLoadingRolePermissions, setIsLoadingRolePermissions] = useState(false);
+    const [permissionsCatalog, setPermissionsCatalog] = useState<Permission[]>([]);
+    const [isLoadingPermissionsCatalog, setIsLoadingPermissionsCatalog] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [deleteTargetUser, setDeleteTargetUser] = useState<User | null>(null);
     const [editForm, setEditForm] = useState<UserEditForm>({
@@ -101,6 +124,22 @@ function UsuariosPage() {
             previous.includes(applicationId)
                 ? previous.filter((id) => id !== applicationId)
                 : [...previous, applicationId]
+        );
+    };
+
+    const handleToggleCreateRole = (roleId: string) => {
+        setCreateSelectedRoleIds((previous) =>
+            previous.includes(roleId)
+                ? previous.filter((id) => id !== roleId)
+                : [...previous, roleId]
+        );
+    };
+
+    const handleToggleEditRole = (roleId: string) => {
+        setEditSelectedRoleIds((previous) =>
+            previous.includes(roleId)
+                ? previous.filter((id) => id !== roleId)
+                : [...previous, roleId]
         );
     };
 
@@ -137,6 +176,43 @@ function UsuariosPage() {
             const deleteResult = await deleteUserApplication(link.id);
             if (deleteResult.status < 200 || deleteResult.status >= 300) {
                 throw new Error(deleteResult.errorMessage ?? "Nao foi possivel remover o vinculo do usuário com a aplicacao.");
+            }
+        }
+    };
+
+    const loadUserRoleLinks = async (userId: string): Promise<UserRole[]> => {
+        const resultado = await getUserRolesByUserId(userId);
+        if (resultado.status < 200 || resultado.status >= 300) {
+            throw new Error(resultado.errorMessage ?? "Nao foi possivel carregar os vinculos do usuário com roles.");
+        }
+
+        return resultado.data;
+    };
+
+    const syncUserRoleLinks = async (userId: string, selectedRoleIds: string[]) => {
+        const existingLinks = await loadUserRoleLinks(userId);
+        const selectedSet = new Set(selectedRoleIds);
+        const existingByRoleId = new Map(existingLinks.map((link) => [link.roleId, link]));
+
+        for (const roleId of selectedSet) {
+            if (existingByRoleId.has(roleId)) {
+                continue;
+            }
+
+            const createResult = await createUserRole({ userId, roleId });
+            if (createResult.status < 200 || createResult.status >= 300) {
+                throw new Error(createResult.errorMessage ?? "Nao foi possivel vincular o usuário a role.");
+            }
+        }
+
+        for (const link of existingLinks) {
+            if (selectedSet.has(link.roleId)) {
+                continue;
+            }
+
+            const deleteResult = await deleteUserRole(link.id);
+            if (deleteResult.status < 200 || deleteResult.status >= 300) {
+                throw new Error(deleteResult.errorMessage ?? "Nao foi possivel remover o vinculo do usuário com a role.");
             }
         }
     };
@@ -206,6 +282,74 @@ function UsuariosPage() {
         }
     ];
 
+    const renderRoleBindingTable = (
+        selectedIds: string[],
+        onToggle: (roleId: string) => void,
+        rowKeyPrefix: string
+    ) => {
+        const bindingColumns: DataTableColumn<Role>[] = [
+            ...roleColumns,
+            {
+                key: "vincular",
+                header: "VINCULAR",
+                width: "120px",
+                align: "center",
+                render: (role) => (
+                    <ActionsGroup>
+                        <input
+                            type="checkbox"
+                            aria-label={`Vincular usuário no cargo ${role.name}`}
+                            checked={selectedIds.includes(role.id)}
+                            onChange={() => onToggle(role.id)}
+                        />
+                        <ActionButton
+                            type="button"
+                            aria-label={`Visualizar permissões do cargo ${role.name}`}
+                            $variant="view"
+                            onClick={() => handleOpenRolePermissions(role)}
+                        >
+                            <FaEye size={14} />
+                        </ActionButton>
+                    </ActionsGroup>
+                )
+            }
+        ];
+
+        return (
+            <>
+                <ApplicationBindingHint>
+                    Selecione os cargos vinculados ao usuário.
+                </ApplicationBindingHint>
+                <DataTable
+                    columns={bindingColumns}
+                    data={roles}
+                    searchableFields={["name"]}
+                    searchPlaceholder="Pesquisar cargos..."
+                    rowKey={(role) => `${rowKeyPrefix}-${role.id}`}
+                    emptyMessage={
+                        isLoadingRoles ? "Carregando cargos..." : "Nenhum cargo disponível."
+                    }
+                />
+            </>
+        );
+    };
+
+    const roleColumns: DataTableColumn<Role>[] = [
+        {
+            key: "name",
+            header: "CARGO",
+            render: (role) => role.name
+        }
+    ];
+
+    const permissionColumns: DataTableColumn<Permission>[] = [
+        {
+            key: "name",
+            header: "PERMISSÃO",
+            render: (permission) => permission.name
+        }
+    ];
+
     const loadUsers = async (): Promise<User[]> => {
         setIsLoading(true);
         setErrorMessage("");
@@ -233,6 +377,65 @@ function UsuariosPage() {
             setIsLoading(false);
             return [];
         }
+    };
+
+    const loadPermissionsCatalog = async () => {
+        if (isLoadingPermissionsCatalog || permissionsCatalog.length > 0) {
+            return permissionsCatalog;
+        }
+
+        setIsLoadingPermissionsCatalog(true);
+
+        try {
+            const resultado = await getPermissions();
+            if (resultado.status < 200 || resultado.status >= 300) {
+                throw new Error(resultado.errorMessage ?? "Não foi possível carregar as permissões.");
+            }
+
+            setPermissionsCatalog(resultado.data);
+            return resultado.data;
+        } finally {
+            setIsLoadingPermissionsCatalog(false);
+        }
+    };
+
+    const handleOpenRolePermissions = async (role: Role) => {
+        setRolePermissionsTarget(role);
+        setRolePermissions([]);
+        setRolePermissionsError("");
+        setIsRolePermissionsModalOpen(true);
+        setIsLoadingRolePermissions(true);
+
+        try {
+            const catalog = await loadPermissionsCatalog();
+            const linksResult = await getRolePermissionsByRoleId(role.id);
+
+            if (linksResult.status < 200 || linksResult.status >= 300) {
+                throw new Error(linksResult.errorMessage ?? "Não foi possível carregar as permissões do cargo.");
+            }
+
+            const selectedPermissionIds = new Set(linksResult.data.map((item) => item.permissionId));
+            const filtered = catalog.filter((permission) => selectedPermissionIds.has(permission.id));
+            setRolePermissions(filtered);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Não foi possível carregar as permissões do cargo.";
+            setRolePermissions([]);
+            setRolePermissionsError(message);
+            showAlert({ type: "error", message });
+        } finally {
+            setIsLoadingRolePermissions(false);
+        }
+    };
+
+    const handleCloseRolePermissionsModal = () => {
+        if (isLoadingRolePermissions) {
+            return;
+        }
+
+        setIsRolePermissionsModalOpen(false);
+        setRolePermissionsTarget(null);
+        setRolePermissions([]);
+        setRolePermissionsError("");
     };
 
     const loadApplicationsForBinding = async () => {
@@ -266,6 +469,37 @@ function UsuariosPage() {
         setIsLoadingApplications(false);
     };
 
+    const loadRolesForBinding = async () => {
+        if (isLoadingRoles || roles.length > 0) {
+            return;
+        }
+
+        setIsLoadingRoles(true);
+
+        try {
+            const resultado = await getRoles();
+            if (resultado.status < 200 || resultado.status >= 300) {
+                showAlert({
+                    type: "error",
+                    message: resultado.errorMessage ?? "Não foi possível carregar as roles para vínculo."
+                });
+                setRoles([]);
+                setIsLoadingRoles(false);
+                return;
+            }
+
+            setRoles(resultado.data);
+        } catch {
+            showAlert({
+                type: "error",
+                message: "Não foi possível carregar as roles para vínculo."
+            });
+            setRoles([]);
+        }
+
+        setIsLoadingRoles(false);
+    };
+
     useEffect(() => {
         loadUsers();
     }, []);
@@ -276,6 +510,10 @@ function UsuariosPage() {
         if (tabId === "aplicacoes") {
             await loadApplicationsForBinding();
         }
+
+        if (tabId === "cargos") {
+            await loadRolesForBinding();
+        }
     };
 
     const handleEditTabChange = async (tabId: UserFormTabId) => {
@@ -284,11 +522,16 @@ function UsuariosPage() {
         if (tabId === "aplicacoes") {
             await loadApplicationsForBinding();
         }
+
+        if (tabId === "cargos") {
+            await loadRolesForBinding();
+        }
     };
 
     const handleCreate = () => {
         setCreateActiveTab("cadastro");
         setCreateSelectedApplicationIds([]);
+        setCreateSelectedRoleIds([]);
         setCreateForm({
             email: "",
             login: "",
@@ -346,10 +589,11 @@ function UsuariosPage() {
                 : refreshedUsers.find((user) => user.login === createForm.login && user.email === createForm.email);
 
             if (!createdUser) {
-                throw new Error("Usuário criado, mas nao foi possivel identificar o registro para vincular aplicacoes.");
+                throw new Error("Usuário criado, mas nao foi possivel identificar o registro para vincular aplicações/roles.");
             }
 
             await syncUserApplicationLinks(createdUser.id, createSelectedApplicationIds);
+            await syncUserRoleLinks(createdUser.id, createSelectedRoleIds);
 
             setIsCreateModalOpen(false);
             showAlert({ type: "success", message: "Usuário criado com sucesso." });
@@ -408,6 +652,15 @@ function UsuariosPage() {
             setEditSelectedApplicationIds(userApplications.map((item) => item.applicationId));
         } catch (error) {
             const message = error instanceof Error ? error.message : "Nao foi possivel carregar os vinculos do usuário.";
+            showAlert({ type: "error", message });
+            return;
+        }
+
+        try {
+            const userRoles = await loadUserRoleLinks(user.id);
+            setEditSelectedRoleIds(userRoles.map((item) => item.roleId));
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Nao foi possivel carregar os vinculos do usuário com roles.";
             showAlert({ type: "error", message });
             return;
         }
@@ -526,6 +779,7 @@ function UsuariosPage() {
             }
 
             await syncUserApplicationLinks(selectedUser.id, editSelectedApplicationIds);
+            await syncUserRoleLinks(selectedUser.id, editSelectedRoleIds);
 
             setIsEditModalOpen(false);
             setSelectedUser(null);
@@ -702,6 +956,16 @@ function UsuariosPage() {
                                             )}
                                         </>
                                     )}
+
+                                    {createActiveTab === "cargos" && (
+                                        <>
+                                            {renderRoleBindingTable(
+                                                createSelectedRoleIds,
+                                                handleToggleCreateRole,
+                                                "create-role-binding"
+                                            )}
+                                        </>
+                                    )}
                                 </ModalBody>
                             </FormSideBar>
 
@@ -816,6 +1080,16 @@ function UsuariosPage() {
                                             )}
                                         </>
                                     )}
+
+                                    {editActiveTab === "cargos" && (
+                                        <>
+                                            {renderRoleBindingTable(
+                                                editSelectedRoleIds,
+                                                handleToggleEditRole,
+                                                "edit-role-binding"
+                                            )}
+                                        </>
+                                    )}
                                 </ModalBody>
                             </FormSideBar>
 
@@ -828,6 +1102,40 @@ function UsuariosPage() {
                                 </PrimaryButton>
                             </ModalActions>
                         </form>
+                    </Modal>
+                </ModalOverlay>
+            )}
+
+            {isRolePermissionsModalOpen && rolePermissionsTarget && (
+                <ModalOverlay onClick={handleCloseRolePermissionsModal}>
+                    <Modal onClick={(event) => event.stopPropagation()}>
+                        <ModalTitle>Permissões do cargo</ModalTitle>
+
+                        <ApplicationBindingHint>
+                            Cargo selecionado: {rolePermissionsTarget.name}
+                        </ApplicationBindingHint>
+                        {rolePermissionsError && <Subtitle>{rolePermissionsError}</Subtitle>}
+
+                        <ModalBody>
+                            <DataTable
+                                columns={permissionColumns}
+                                data={rolePermissions}
+                                searchableFields={["name"]}
+                                searchPlaceholder="Pesquisar permissões..."
+                                rowKey={(permission) => permission.id}
+                                emptyMessage={
+                                    isLoadingRolePermissions
+                                        ? "Carregando permissões..."
+                                        : "Nenhuma permissão vinculada a este cargo."
+                                }
+                            />
+                        </ModalBody>
+
+                        <ModalActions>
+                            <SecondaryButton type="button" onClick={handleCloseRolePermissionsModal}>
+                                Fechar
+                            </SecondaryButton>
+                        </ModalActions>
                     </Modal>
                 </ModalOverlay>
             )}
