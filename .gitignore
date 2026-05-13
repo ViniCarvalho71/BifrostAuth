@@ -200,8 +200,9 @@ PublishScripts/
 **/[Pp]ackages/*
 
 # Environment files (do not commit secrets)
-.env.bifrostauth.prod
-.env.*.prod
+.env
+.env.*
+!.env*.example
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
 # Uncomment if necessary however generally it will be regenerated when needed

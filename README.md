@@ -167,22 +167,38 @@ Configuração em `BifrostAuth.API/appsettings.Development.json`:
 ```
 ---
 
-## 🐳 Rodar com Docker (modo "produção")
+## ☁️ Deploy na AWS (Produção)
 
-Para subir o stack de forma mais próxima de produção (sem expor Postgres na sua máquina host e com env separado):
+O projeto está preparado para ser escalado e hospedado na AWS (ex: ECS, EKS, App Runner ou Elastic Beanstalk), com separação de responsabilidades entre Frontend, Backend e Banco de Dados.
 
-1. Copie o exemplo de env:
-  - copie `.env.bifrostauth.prod.example` → `.env.bifrostauth.prod`
-  - ajuste `POSTGRES_PASSWORD`, `ConnectionStrings__DefaultConnection` e `Jwt__Key`
-2. Suba com:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`
+### 1. Banco de Dados (Amazon RDS)
+Em produção, utilize um banco gerenciado como o **Amazon RDS (PostgreSQL)** em vez de container Docker:
+- Ao criar a instância no RDS, anote o `Endpoint`, `Port`, `Username` e `Password`.
+- O schema será criado via migrations do FluentMigrator no startup do backend (ou CI/CD).
 
-Observações:
+### 2. Backend (.NET API)
+Utilize o `Dockerfile.backend` para construir a imagem da API:
+```bash
+docker build -f Dockerfile.backend -t bifrostauth-backend:latest .
+```
+No ambiente da AWS (Task Definition do ECS, por exemplo), configure as variáveis de ambiente essenciais:
+- `ASPNETCORE_ENVIRONMENT=Production`
+- `ConnectionStrings__DefaultConnection="Server=<RDS_ENDPOINT>;Port=5432;Database=BifrostAuth;Username=postgres;Password=<RDS_PASSWORD>"`
+- `Jwt__Key="<SUA_CHAVE_FORTE>"`
+- `Migrations__RunOnStartup=true` (Opcional: ative apenas na primeira subida ou em pipeline de CI/CD para versionar o schema)
 
-- Seeds ficam desabilitados por padrão em produção; habilite apenas se quiser bootstrap automático.
-- `NHibernate__SchemaUpdateEnabled` deve ficar `false` quando FluentMigrator controla o schema.
+### 3. Frontend (React + Vite)
+Utilize o `Dockerfile.frontend` para construir a imagem do SPA servido por NGINX:
+```bash
+docker build -f Dockerfile.frontend -t bifrostauth-frontend:latest .
+```
+> **Nota:** Certifique-se de configurar as variáveis de ambiente (ex: `VITE_API_URL`) antes do build, pois variáveis do frontend React são injetadas em tempo de build, ou utilize técnicas de injeção em runtime (window.env).
 
-## 🐳 Rodar com Docker (modo "dev")
+### Observações Gerais
+- Faça push das imagens geradas para o **Amazon ECR**.
+- Seeds ficam desabilitados por padrão em produção; habilite (`Seed__Admin__Enabled=true`) com senha (`Seed__Admin__Password`) se quiser criar o primeiro admin automaticamente.
+
+## 🐳 Rodar com Docker (modo "dev" local)
 
 O `docker-compose.yml` padrão usa o arquivo `.env.bifrostauth`, que está configurado com `ASPNETCORE_ENVIRONMENT=Development`.
 
