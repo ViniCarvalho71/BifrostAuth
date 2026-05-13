@@ -4,7 +4,9 @@ using BifrostAuth.Application.Interfaces;
 using BifrostAuth.Application.Sevices;
 using BifrostAuth.Domain.Repositories;
 using BifrostAuth.Infrastructure.NHibernate.SessionFactory;
+using BifrostAuth.Infrastructure.Persistence.Migrations;
 using BifrostAuth.Infrastructure.Persistence.Repositories;
+using BifrostAuth.Infrastructure.Persistence.Seeds;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.HttpOverrides;
 using NHibernate;
@@ -30,11 +32,24 @@ builder.Services.AddCors(options =>
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionString 'DefaultConnection' não configurada.");
 
+builder.Services.AddBifrostMigrations(builder.Configuration, builder.Environment);
+builder.Services.AddBifrostSeeds(builder.Configuration, builder.Environment);
+
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt")
 );
 
-var sessionFactory = NHibernateSessionFactory.Build(connectionString);
+var enableSchemaUpdate = builder.Configuration.GetValue<bool>("NHibernate:SchemaUpdateEnabled");
+var showSql = builder.Configuration.GetValue<bool?>("NHibernate:ShowSql") ?? builder.Environment.IsDevelopment();
+var formatSql = builder.Configuration.GetValue<bool?>("NHibernate:FormatSql") ?? builder.Environment.IsDevelopment();
+var batchSize = builder.Configuration.GetValue<int?>("NHibernate:AdoNetBatchSize") ?? 20;
+
+var sessionFactory = NHibernateSessionFactory.Build(
+    connectionString,
+    enableSchemaUpdate,
+    showSql,
+    formatSql,
+    batchSize);
 
 builder.Services.AddSingleton(sessionFactory);
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -62,6 +77,9 @@ builder.Services.AddControllers().AddOData(opt =>
 
 
 var app = builder.Build();
+
+await app.RunBifrostMigrationsAsync();
+await app.RunBifrostSeedsAsync();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
@@ -91,4 +109,4 @@ app.MapControllers();
 
 app.MapFallbackToFile("index.html");
 
-app.Run();
+await app.RunAsync();

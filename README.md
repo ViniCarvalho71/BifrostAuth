@@ -106,7 +106,38 @@ Os módulos seguem padrão de CRUD (`GET`, `GET {id}`, `POST`, `PUT`, `DELETE`).
 
 ## 🗄️ Banco de dados e evolução de schema
 
-A inicialização do NHibernate está com `SchemaUpdate`, evitando recriação do banco a cada execução.
+O projeto agora suporta **migrations profissionais com FluentMigrator**.
+
+- As migrations ficam em `BifrostAuth.Infrastructure/Persistence/Migrations`
+- A tabela de controle de versões é `VersionInfo` (padrão do FluentMigrator)
+- Por padrão, as migrations rodam automaticamente no startup (configurável)
+
+### Seeds (ADMIN)
+
+Existe um seed idempotente para criar:
+
+- Role `ADMIN`
+- Usuário admin
+- Vínculo `UserRoles`
+- Application padrão (`client_id=bifrost_app_8080`)
+- Vínculo `UserApplications` (admin → application)
+
+Seeds ficam em `BifrostAuth.Infrastructure/Persistence/Seeds`.
+
+Por segurança:
+
+- Em `Development`, o seed pode rodar automaticamente (se você não desabilitar)
+- Em `Production`, habilite explicitamente e informe a senha via env var
+
+### Variáveis de ambiente (exemplo)
+
+Veja `.env.bifrostauth` para o exemplo completo. Principais chaves:
+
+- `Migrations__RunOnStartup=true|false`
+- `Migrations__Tags__0=Development` (opcional, para rodar apenas migrations taggeadas)
+- `NHibernate__SchemaUpdateEnabled=true|false` (recomendado `false` quando usar FluentMigrator)
+- `Seed__Admin__Enabled=true|false`
+- `Seed__Admin__Password=<senha forte>`
 
 ---
 
@@ -135,6 +166,29 @@ Configuração em `BifrostAuth.API/appsettings.Development.json`:
 }
 ```
 ---
+
+## 🐳 Rodar com Docker (modo "produção")
+
+Para subir o stack de forma mais próxima de produção (sem expor Postgres na sua máquina host e com env separado):
+
+1. Copie o exemplo de env:
+  - copie `.env.bifrostauth.prod.example` → `.env.bifrostauth.prod`
+  - ajuste `POSTGRES_PASSWORD`, `ConnectionStrings__DefaultConnection` e `Jwt__Key`
+2. Suba com:
+  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`
+
+Observações:
+
+- Seeds ficam desabilitados por padrão em produção; habilite apenas se quiser bootstrap automático.
+- `NHibernate__SchemaUpdateEnabled` deve ficar `false` quando FluentMigrator controla o schema.
+
+## 🐳 Rodar com Docker (modo "dev")
+
+O `docker-compose.yml` padrão usa o arquivo `.env.bifrostauth`, que está configurado com `ASPNETCORE_ENVIRONMENT=Development`.
+
+- Subir dev:
+  - `docker compose up -d --build`
+- Nesse modo, se `Seed__Admin__Enabled=true` e `Seed__Application__Enabled=true`, ele cria (idempotente) o usuário admin e a application padrão.
 
 ## 📫 Contato
 

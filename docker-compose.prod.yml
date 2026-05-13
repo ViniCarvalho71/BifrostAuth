@@ -1,0 +1,12 @@
+services:
+  postgres:
+    # Em produção, não exponha o Postgres na máquina host.
+    ports: []
+    environment:
+      # Defina um password forte no seu .env de produção.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  api:
+    # Em produção, use um env file separado (não comite secrets).
+    env_file:
+      - .env.bifrostauth.prod

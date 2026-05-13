@@ -13,26 +13,41 @@ namespace BifrostAuth.Infrastructure.NHibernate.SessionFactory
     {
         private static ISessionFactory? _sessionFactory;
 
-        public static ISessionFactory Build(string connectionString)
+        public static ISessionFactory Build(
+            string connectionString,
+            bool enableSchemaUpdate = false,
+            bool showSql = false,
+            bool formatSql = false,
+            int adoNetBatchSize = 20)
         {
             if (_sessionFactory != null)
                 return _sessionFactory;
 
-            _sessionFactory = Fluently.Configure()
-                .Database(
-                    PostgreSQLConfiguration.Standard
-                        .ConnectionString(connectionString)
-                        .ShowSql()
-                        .FormatSql()
-                        .AdoNetBatchSize(20)
-                )
+            var dbConfig = PostgreSQLConfiguration.Standard
+                .ConnectionString(connectionString)
+                .AdoNetBatchSize(adoNetBatchSize);
+
+            if (showSql)
+                dbConfig = dbConfig.ShowSql();
+
+            if (formatSql)
+                dbConfig = dbConfig.FormatSql();
+
+            var fluent = Fluently.Configure()
+                .Database(dbConfig)
                 .Mappings(m =>
                     m.FluentMappings.AddFromAssemblyOf<UserMap>())
-                .ExposeConfiguration(cfg =>
+                ;
+
+            if (enableSchemaUpdate)
+            {
+                fluent = fluent.ExposeConfiguration(cfg =>
                 {
                     new SchemaUpdate(cfg).Execute(false, true);
-                })
-                .BuildSessionFactory();
+                });
+            }
+
+            _sessionFactory = fluent.BuildSessionFactory();
 
             return _sessionFactory;
         }
