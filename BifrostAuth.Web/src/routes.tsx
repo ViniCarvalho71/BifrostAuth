@@ -7,6 +7,7 @@ import DashboardPage from './Pages/DashboardPage'
 import ApplicationPage from './Pages/ApplicationPage'
 import PermissoesPage from './Pages/PermissoesPage'
 import RolesPage from './Pages/RolesPage'
+import CallbackPage from './Pages/CallbackPage'
 
 function AppRoutes() {
 	return (
@@ -15,6 +16,7 @@ function AppRoutes() {
 				<Route path="/" element={<LoginPage />} />
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="/authorize" element={<LoginPage />} />
+				<Route path="/callback" element={<CallbackPage />} />
 				<Route
 					path="/"
 					element={

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { clearAuthToken } from "../../Services/authService";
+import { returnToAuthorize } from "../../Utils/returnToAuthorize";
 import {
   Brand,
   Content,
@@ -19,16 +20,12 @@ import {
   TopBar
 } from "./style";
 
-const CLIENT_ID = (import.meta.env.CLIENT_ID as string | undefined)?.trim() ?? "";
-const AUTHORIZE_REDIRECT = `/authorize?client_id=${encodeURIComponent(CLIENT_ID)}`;
-
 function SidebarLayout() {
-  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const logout = () => {
     clearAuthToken();
-    navigate(AUTHORIZE_REDIRECT, { replace: true });
+    returnToAuthorize();
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);

@@ -12,9 +12,9 @@ public sealed class ApplicationSeedOptions
     /// Em produção, recomenda-se definir via variável de ambiente.
     /// Em desenvolvimento, se não for informado, será gerado automaticamente.
     /// </summary>
-    public string? ClientSecret { get; set; }
+    public string? ClientSecret { get; set; } 
 
-    public string? RedirectUrl { get; set; }
+    public string? RedirectUrl { get; set; } = "http://localhost:8080";
 
     public bool IsActive { get; set; } = true;
 }

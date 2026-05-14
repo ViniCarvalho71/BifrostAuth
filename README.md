@@ -61,15 +61,132 @@ Mapeamentos NHibernate, sessão de banco e implementação do repositório.
 
 ## 🔐 Fluxo de autenticação
 
-1. Cliente envia `email`, `password` e `clientId`.
-2. API valida aplicação ativa e vínculo do usuário com a aplicação.
-3. API carrega `roles` e `permissions` do usuário.
-4. API retorna JWT com claims:
-   - `sub`
-   - `email`
-   - `name`
-   - `role`
-   - `permission`
+### Novo fluxo (via URL + callback)
+
+O login é feito no estilo **redirect**:
+
+1. Sua aplicação redireciona o usuário para a tela de autorização do BifrostAuth (`/authorize`) informando o `client_id` e um `redirect_uri`.
+2. O usuário autentica (e-mail/senha).
+3. Em caso de sucesso, o BifrostAuth redireciona para o **endpoint de callback** informado, enviando o JWT na query string:
+
+`GET <callback_url>?token=<JWT>`
+
+4. Sua aplicação (no callback) extrai o `token`, salva com segurança e valida o JWT.
+5. Se o token estiver inválido/expirado, a aplicação deve redirecionar novamente para o `/authorize`.
+
+#### Exemplo de URL de autorização
+
+> Ajuste o host/base para onde o BifrostAuth está publicado.
+
+```text
+GET https://<BIFROST_AUTH_HOST>/authorize?client_id=bifrost_app_8080&response_type=code&redirect_uri=http://localhost:8080/callback
+```
+
+#### Regras de redirect
+
+O `redirect_uri` é validado contra o `RedirectUrl` cadastrado na `Application` do `client_id`.
+No frontend do BifrostAuth, a validação é feita garantindo:
+
+- mesmo `origin` (protocolo + host + porta)
+- e que o `path` do `redirect_uri` seja igual ao cadastrado ou um subcaminho permitido
+
+Isso evita que um `client_id` válido redirecione para um domínio não autorizado.
+
+> Observação: o projeto usa o caminho fixo `/callback` para finalizar o fluxo.
+> Se você informar `redirect_uri=http://localhost:8080`, o redirecionamento final será `http://localhost:8080/callback?token=...`.
+> Se você informar `redirect_uri=http://localhost:8080/callback`, o redirecionamento final será `http://localhost:8080/callback?token=...`.
+
+---
+
+### O que validar no token (implementação do consumidor)
+
+O JWT emitido pelo BifrostAuth é assinado com **HS256 (HMAC-SHA256)** e expira em **1 hora**.
+
+Validações mínimas recomendadas:
+
+1. **Estrutura JWT**: 3 partes (`header.payload.signature`).
+2. **Assinatura**: validar com a mesma chave do servidor (`Jwt__Key`).
+3. **Expiração (`exp`)**: rejeitar token expirado.
+4. **Audience (`aud`)**: deve ser igual ao seu `client_id`.
+5. (Opcional, recomendado) **Issuer (`iss`)**: deve ser igual a `Jwt__Issuer`.
+
+Claims emitidas no token:
+
+- `sub` (id do usuário)
+- `email`
+- `name` (login)
+- `role` (uma ou mais)
+- `permission` (uma ou mais)
+
+#### Exemplo (C#) — validar JWT recebido no callback
+
+```csharp
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+
+bool ValidateBifrostJwt(string token, string jwtKey, string issuer, string clientId)
+{
+    var handler = new JwtSecurityTokenHandler();
+    var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+
+    handler.ValidateToken(
+        token,
+        new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
+
+            ValidateAudience = true,
+            ValidAudience = clientId,
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        },
+        out _
+    );
+
+    return true;
+}
+```
+
+#### Exemplo (SPA) — implementar o `/callback`
+
+```ts
+// /callback
+const params = new URLSearchParams(window.location.search);
+const token = (params.get("token") ?? "").trim();
+
+if (!token) {
+  window.location.assign("/login");
+}
+
+// Salve onde fizer sentido para o seu app (localStorage, cookie, state, etc.)
+localStorage.setItem("token", token);
+
+// Em seguida valide (assinatura + exp + aud + iss) e redirecione:
+window.location.assign("/app");
+```
+
+#### Usando o token nas requisições
+
+Após validar, envie o JWT como Bearer token:
+
+```http
+Authorization: Bearer <JWT>
+```
+
+#### Importante (segurança)
+
+- Evite validar HS256 no **browser** usando a chave secreta, porque isso exige expor o segredo no frontend.
+  O projeto `BifrostAuth.Web` faz essa validação client-side apenas como exemplo/demonstração.
+- Em aplicações reais, prefira:
+  - validar no backend da sua aplicação; e/ou
+  - trocar o fluxo para **authorization code** (enviar `code` no callback e trocar por token no servidor);
+  - armazenar token em **cookie HttpOnly** ou outra estratégia compatível com seu cenário.
 
 ---
 
@@ -92,13 +209,16 @@ Os módulos seguem padrão de CRUD (`GET`, `GET {id}`, `POST`, `PUT`, `DELETE`).
 
 ### Exemplo de login
 
+> Esse endpoint é usado pela tela `/authorize` para gerar o JWT. Se você estiver integrando um cliente externo,
+> normalmente você só precisa redirecionar para `/authorize` e tratar o `/callback`.
+
 `POST /api/Auth`
 
 ```json
 {
   "email": "usuario@dominio.com",
   "password": "senha",
-  "clientId": "connect_sti_67"
+  "clientId": "bifrost_app_8080"
 }
 ```
 

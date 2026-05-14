@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# BifrostAuth.Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SPA (React + Vite) usada como **tela de autorização** e **painel administrativo** do BifrostAuth.
 
-Currently, two official plugins are available:
+## Fluxo `/authorize` → `/callback`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. A aplicação cliente redireciona o usuário para:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+/authorize?client_id=<CLIENT_ID>&response_type=code&redirect_uri=<REDIRECT_URI>
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. A página de login (`/authorize`) autentica chamando a API (`POST /api/auth`).
+3. Em caso de sucesso, redireciona para:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```text
+<CALLBACK_URL>?token=<JWT>
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+4. A página `/callback` salva o token e valida antes de liberar o acesso às rotas protegidas.
+
+## Validação do token (como está no projeto)
+
+A validação acontece no frontend em `src/Services/authService.ts` e verifica:
+
+- token expiração (`exp`)
+- audience (`aud`) igual ao `CLIENT_ID`
+- assinatura HS256 com `VITE_JWT_SECRET`
+
+> Observação: isso exige ter o segredo no browser. Para produção, a recomendação é validar no backend do cliente
+> (e não expor `Jwt__Key` no frontend).
+
+## Variáveis de ambiente
+
+Arquivo: `.env`
+
+- `VITE_API_URL`: base URL da API (ex.: `http://localhost:5249`)
+- `CLIENT_ID`: `client_id` cadastrado em `Application` (ex.: `bifrost_app_8080`)
+- `REDIRECT_URI`: URL do callback do cliente (ex.: `http://localhost:8080/callback`)
+- `VITE_JWT_SECRET`: mesma chave do servidor (`Jwt__Key`) para validar assinatura (apenas para demo)
+
+## Rodar localmente
+
+```bash
+npm install
+npm run dev
 ```
