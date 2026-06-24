@@ -1,7 +1,9 @@
 using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
+using BifrostAuth.Domain.Events;
 using BifrostAuth.Domain.Models;
 using BifrostAuth.Domain.Repositories;
+using BifrostAuth.Messaging.Abstractions;
 using BifrostAuth.Models;
 using System;
 using System.Collections.Generic;
@@ -17,14 +19,16 @@ namespace BifrostAuth.Application.Sevices
         private readonly IApplicationService _applicationService;
         private readonly IUserApplicationService _userApplicationService;
         private readonly IEmailService _emailService;
+        private readonly IEventBus _eventBus;
 
-        public UserService(IRepository<User> repository, IPasswordHash passwordHasher, IApplicationService applicationService, IUserApplicationService userApplicationService, IEmailService emailService)
+        public UserService(IRepository<User> repository, IPasswordHash passwordHasher, IApplicationService applicationService, IUserApplicationService userApplicationService, IEmailService emailService, IEventBus eventBus)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
             _applicationService = applicationService;
             _userApplicationService = userApplicationService;
             _emailService = emailService;
+            _eventBus = eventBus;
         }
 
         public static void ValidatePassword(string password)
@@ -135,39 +139,51 @@ namespace BifrostAuth.Application.Sevices
 
         public void Register(RegisterUserDto dto)
         {
-            var user = _repository.Query().FirstOrDefault(x => x.Email == dto.Email);
-
-            if (user != null) throw new Exception($"Já existe um usuário com o email {dto.Email}.");
-
-            ValidatePassword(dto.Password);
-
-            var application = _applicationService.GetAll().FirstOrDefault(a => a.ClientId == dto.ClientId);
-
-            if (application != null) throw new Exception("Aplicação inválida");
-
-            var entity = new UserDto
+            try
             {
-                Login = dto.Login,
-                Email = dto.Email,
-                Password = _passwordHasher.Hash(dto.Password),
-                IsActive = false,
-            };
+                var user = _repository.Query().FirstOrDefault(x => x.Email == dto.Email);
 
-            Save(entity);
+                if (user != null) throw new Exception($"Já existe um usuário com o email {dto.Email}.");
 
-            var createdUser = _repository.Query().FirstOrDefault(x => x.Email == dto.Email); 
+                ValidatePassword(dto.Password);
 
-            if (createdUser == null) throw new Exception("Erro ao criar usuário.");
+                var application = _applicationService.GetAll().FirstOrDefault(a => a.ClientId == dto.ClientId);
 
-            var userApplication = new UserApplicationDto
+                if (application == null) throw new Exception("Aplicação inválida");
+
+                var entity = new UserDto
+                {
+                    Login = dto.Login,
+                    Email = dto.Email,
+                    Password = _passwordHasher.Hash(dto.Password),
+                    IsActive = false,
+                };
+
+                Save(entity);
+
+                var createdUser = _repository.Query().FirstOrDefault(x => x.Email == dto.Email);
+
+                if (createdUser == null) throw new Exception("Erro ao criar usuário.");
+
+                var userApplication = new UserApplicationDto
+                {
+                    ApplicationId = application.Id,
+                    UserId = createdUser.Id
+                };
+
+                _userApplicationService.Save(userApplication);
+
+                _eventBus.PublishAsync(new UserCreatedEvent(
+                        createdUser.Id,
+                        createdUser.Email,
+                        createdUser.Login
+                    )
+                );
+            }
+            catch (Exception ex)
             {
-                ApplicationId = application.Id,
-                UserId = createdUser.Id
-            };
-
-            _userApplicationService.Save(userApplication);
-
-            _emailService.SendEmail(dto.Email, "Bem-vindo ao BifrostAuth", "Clique no link para confimar o seu email");
+                throw new Exception($"Erro ao registrar usuário: {ex.Message}");
+            }
         }
     }
 }

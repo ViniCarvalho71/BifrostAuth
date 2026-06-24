@@ -73,6 +73,8 @@ namespace BifrostAuth.Infrastructure.Persistence.Repositories
         {
             return _session.Query<T>();
         }
+
+        
     }
 }
 

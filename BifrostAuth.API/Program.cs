@@ -1,14 +1,17 @@
 using BifrostAuth.Application.Configurations;
-using BifrostAuth.Application.Criptografy;
+using BifrostAuth.Application.Criptography;
 using BifrostAuth.Application.Interfaces;
 using BifrostAuth.Application.Sevices;
 using BifrostAuth.Domain.Repositories;
+using BifrostAuth.Infrastructure.Configuration;
+using BifrostAuth.Infrastructure.Messaging;
 using BifrostAuth.Infrastructure.NHibernate.SessionFactory;
 using BifrostAuth.Infrastructure.Persistence.Migrations;
 using BifrostAuth.Infrastructure.Persistence.Repositories;
 using BifrostAuth.Infrastructure.Persistence.Seeds;
-using Microsoft.AspNetCore.OData;
+using BifrostAuth.Messaging.Abstractions;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.OData;
 using NHibernate;
 using Scalar.AspNetCore;
 
@@ -73,6 +76,11 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddControllers().AddOData(opt =>
     opt.Filter().Select().OrderBy().Count().Expand().SetMaxTop(100)
 );
+builder.Services.Configure<RabbitMqOptions>(
+    builder.Configuration.GetSection("RabbitMQ"));
+
+builder.Services.AddSingleton<RabbitMqConnection>();
+builder.Services.AddSingleton<IEventBus, RabbitMqEventBus>();
 
 
 

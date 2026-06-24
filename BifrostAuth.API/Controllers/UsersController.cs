@@ -47,6 +47,20 @@ namespace BifrostAuth.API.Controllers
             
         }
 
+        [HttpPost("Register")]
+        public IActionResult Register([FromBody] RegisterUserDto dto)
+        {
+            try
+            {
+                _service.Register(dto);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpPut("{id:guid}")]
         public IActionResult Update(Guid id, [FromBody] UserDto dto)
         {
@@ -61,5 +75,6 @@ namespace BifrostAuth.API.Controllers
             _service.Delete(id);
             return NoContent();
         }
+
     }
 }

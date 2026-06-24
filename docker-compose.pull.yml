@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bifrostauth-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-authsti}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d authsti"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  api:
+    # Imagem publicada em um registry (GHCR/Docker Hub/ECR/ACR...).
+    # Exemplos:
+    # - ghcr.io/seu-org/seu-repo:latest
+    # - docker.io/seu-user/bifrostauth:latest
+    image: ${BIFROSTAUTH_IMAGE:-ghcr.io/SEU_ORG/SEU_REPO:latest}
+    container_name: bifrostauth
+    environment:
+      # Mantenha Production para evitar HTTPS redirection no container.
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+
+      # Obrigatório (a API lança exceção se faltar).
+      ConnectionStrings__DefaultConnection: "${ConnectionStrings__DefaultConnection:-Server=postgres;Port=5432;Database=authsti;Username=postgres;Password=1234}"
+
+      # JWT (obrigatório para emitir tokens)
+      Jwt__Key: ${Jwt__Key:-CHANGE_ME_STRONG_JWT_KEY}
+      Jwt__Issuer: ${Jwt__Issuer:-BifrostAuth}
+
+      # FluentMigrator
+      Migrations__RunOnStartup: ${Migrations__RunOnStartup:-true}
+
+      # Seeds (facilitam o primeiro uso)
+      Seed__Admin__Enabled: ${Seed__Admin__Enabled:-true}
+      Seed__Admin__Password: ${Seed__Admin__Password:-Admin@123}
+
+      Seed__Application__Enabled: ${Seed__Application__Enabled:-true}
+      Seed__Application__ClientSecret: ${Seed__Application__ClientSecret:-dev-client-secret-change-me}
+      Seed__Application__RedirectUrl: ${Seed__Application__RedirectUrl:-http://localhost:5173}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

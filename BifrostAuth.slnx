@@ -3,4 +3,5 @@
   <Project Path="BifrostAuth.Application/BifrostAuth.Application.csproj" Id="a06fd721-9d6f-412e-9652-1ef04be4bd76" />
   <Project Path="BifrostAuth.Domain/BifrostAuth.Domain.csproj" />
   <Project Path="BifrostAuth.Infrastructure/BifrostAuth.Infrastructure.csproj" />
+  <Project Path="BifrostAuth.Messaging/BifrostAuth.Messaging.csproj" Id="2137ee6c-f75a-490a-9201-b5fdbfb0fd9f" />
 </Solution>

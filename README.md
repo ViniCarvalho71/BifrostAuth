@@ -326,6 +326,72 @@ O `docker-compose.yml` padrão usa o arquivo `.env.bifrostauth`, que está confi
   - `docker compose up -d --build`
 - Nesse modo, se `Seed__Admin__Enabled=true` e `Seed__Application__Enabled=true`, ele cria (idempotente) o usuário admin e a application padrão.
 
+---
+
+## 📦 Publicar a imagem Docker (para o time consumir via pull)
+
+Objetivo: permitir que outra pessoa (ex.: dev frontend) rode o BifrostAuth **sem clonar o repositório**, apenas baixando a imagem do registry.
+
+### Opção A — GitHub Container Registry (GHCR)
+
+1) Build + tag:
+
+```bash
+docker build -f Dockerfile -t ghcr.io/<ORG>/<REPO>:latest .
+```
+
+2) Login no GHCR (PAT com `write:packages` / `read:packages`):
+
+```bash
+docker login ghcr.io
+```
+
+3) Push:
+
+```bash
+docker push ghcr.io/<ORG>/<REPO>:latest
+```
+
+### Opção B — Docker Hub
+
+```bash
+docker build -f Dockerfile -t <DOCKERHUB_USER>/bifrostauth:latest .
+docker login
+docker push <DOCKERHUB_USER>/bifrostauth:latest
+```
+
+---
+
+## ⬇️ Rodar via pull (sem clonar o repo)
+
+Arquivos prontos no repositório:
+
+- `docker-compose.pull.yml` (usa `image:` — não faz build)
+- `.env.bifrostauth.pull.example` (exemplo de variáveis)
+
+Passo a passo (na máquina do dev front):
+
+1) Baixe os 2 arquivos acima (ex.: via "Raw" no GitHub) para uma pasta local.
+2) Copie `.env.bifrostauth.pull.example` para `.env.bifrostauth.pull` e ajuste principalmente:
+   - `BIFROSTAUTH_IMAGE` (imagem publicada)
+   - `Jwt__Key`
+   - `Seed__Application__RedirectUrl` (origem do seu frontend, ex.: `http://localhost:5173`)
+
+3) Suba os containers:
+
+```bash
+docker compose --env-file .env.bifrostauth.pull -f docker-compose.pull.yml up -d
+```
+
+4) Para atualizar para uma versão mais nova:
+
+```bash
+docker compose --env-file .env.bifrostauth.pull -f docker-compose.pull.yml pull
+docker compose --env-file .env.bifrostauth.pull -f docker-compose.pull.yml up -d
+```
+
+> Observação: no container, mantenha `ASPNETCORE_ENVIRONMENT=Production` para evitar redirecionamento automático para HTTPS.
+
 ## 📫 Contato
 
 Se este projeto chamou sua atenção, fique à vontade para entrar em contato pelo GitHub.

@@ -18,10 +18,12 @@
     <PackageReference Include="MySql.Data" Version="9.6.0" />
     <PackageReference Include="NHibernate" Version="5.6.0" />
     <PackageReference Include="Npgsql" Version="10.0.1" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BifrostAuth.Domain\BifrostAuth.Domain.csproj" />
+    <ProjectReference Include="..\BifrostAuth.Messaging\BifrostAuth.Messaging.csproj" />
   </ItemGroup>
 
 </Project>

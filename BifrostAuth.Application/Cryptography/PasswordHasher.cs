@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using BifrostAuth.Application.Interfaces;
 
-namespace BifrostAuth.Application.Criptografy
+namespace BifrostAuth.Application.Criptography
 {
     public class PasswordHasher : IPasswordHash
     {
