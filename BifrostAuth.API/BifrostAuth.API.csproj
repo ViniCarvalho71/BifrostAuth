@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BifrostAuth.Application\BifrostAuth.Application.csproj" />
+    <ProjectReference Include="..\BifrostAuth.EmailWorker\BifrostAuth.EmailWorker.csproj" />
     <ProjectReference Include="..\BifrostAuth.Infrastructure\BifrostAuth.Infrastructure.csproj" />
   </ItemGroup>
 

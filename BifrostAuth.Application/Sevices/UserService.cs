@@ -1,13 +1,9 @@
 using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
-using BifrostAuth.Domain.Events;
-using BifrostAuth.Domain.Models;
 using BifrostAuth.Domain.Repositories;
 using BifrostAuth.Messaging.Abstractions;
+using BifrostAuth.Messaging.Events;
 using BifrostAuth.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace BifrostAuth.Application.Sevices

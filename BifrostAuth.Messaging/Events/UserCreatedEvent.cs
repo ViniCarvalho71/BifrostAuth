@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BifrostAuth.Domain.Events
+namespace BifrostAuth.Messaging.Events
 {
     public record UserCreatedEvent(
         Guid UserId,

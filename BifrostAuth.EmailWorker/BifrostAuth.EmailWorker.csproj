@@ -7,15 +7,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
+    <Folder Include="Templates\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MailKit" Version="4.17.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BifrostAuth.Application\BifrostAuth.Application.csproj" />
     <ProjectReference Include="..\BifrostAuth.Domain\BifrostAuth.Domain.csproj" />
     <ProjectReference Include="..\BifrostAuth.Infrastructure\BifrostAuth.Infrastructure.csproj" />
     <ProjectReference Include="..\BifrostAuth.Messaging\BifrostAuth.Messaging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Templates\welcome_template.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

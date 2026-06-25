@@ -3,6 +3,9 @@ using BifrostAuth.Application.Criptography;
 using BifrostAuth.Application.Interfaces;
 using BifrostAuth.Application.Sevices;
 using BifrostAuth.Domain.Repositories;
+using BifrostAuth.EmailWorker;
+using BifrostAuth.EmailWorker.Consumers;
+using BifrostAuth.EmailWorker.Services;
 using BifrostAuth.Infrastructure.Configuration;
 using BifrostAuth.Infrastructure.Messaging;
 using BifrostAuth.Infrastructure.NHibernate.SessionFactory;
@@ -73,6 +76,10 @@ builder.Services.AddScoped<IApplicationService, ApplicationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHash, PasswordHasher>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<EmailSender>();
+builder.Services.AddHostedService<UserCreatedConsumer>();
+
+
 builder.Services.AddControllers().AddOData(opt =>
     opt.Filter().Select().OrderBy().Count().Expand().SetMaxTop(100)
 );
@@ -82,6 +89,8 @@ builder.Services.Configure<RabbitMqOptions>(
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddSingleton<IEventBus, RabbitMqEventBus>();
 
+builder.Services.Configure<EmailOptions>(
+    builder.Configuration.GetSection("Email"));
 
 
 var app = builder.Build();
