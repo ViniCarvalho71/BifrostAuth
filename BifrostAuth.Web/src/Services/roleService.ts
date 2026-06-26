@@ -1,4 +1,5 @@
 import type { Role, RoleCreateRequest } from "../Types/Role";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
@@ -13,15 +14,6 @@ type ErrorBody = {
     title?: string;
     detail?: string;
 };
-
-function getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem("token");
-
-    return {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-    };
-}
 
 async function readErrorMessage(resultado: Response): Promise<string | null> {
     const rawBody = await resultado.text();
@@ -38,9 +30,8 @@ async function readErrorMessage(resultado: Response): Promise<string | null> {
 }
 
 export async function getRoles() {
-    const resultado = await fetch(`${URL_API}/api/Roles`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Roles`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -61,9 +52,8 @@ export async function getRoles() {
 
 export async function getRolesOData(query?: string) {
     const queryString = query ? `?${query}` : "";
-    const resultado = await fetch(`${URL_API}/api/Roles/getOData${queryString}`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Roles/getOData${queryString}`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -87,9 +77,8 @@ export async function getRolesOData(query?: string) {
 }
 
 export async function getRoleById(id: string) {
-    const resultado = await fetch(`${URL_API}/api/Roles/${id}`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Roles/${id}`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -109,9 +98,8 @@ export async function getRoleById(id: string) {
 }
 
 export async function createRole(payload: RoleCreateRequest) {
-    const resultado = await fetch(`${URL_API}/api/Roles`, {
+    const resultado = await fetchWithAuth(`${URL_API}/api/Roles`, {
         method: "POST",
-        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
     });
 
@@ -138,9 +126,8 @@ export async function createRole(payload: RoleCreateRequest) {
 }
 
 export async function updateRole(payload: Role) {
-    const resultado = await fetch(`${URL_API}/api/Roles/${payload.id}`, {
+    const resultado = await fetchWithAuth(`${URL_API}/api/Roles/${payload.id}`, {
         method: "PUT",
-        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
     });
 
@@ -167,9 +154,8 @@ export async function updateRole(payload: Role) {
 }
 
 export async function deleteRole(id: string) {
-    const resultado = await fetch(`${URL_API}/api/Roles/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Roles/${id}`, {
+        method: "DELETE"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {

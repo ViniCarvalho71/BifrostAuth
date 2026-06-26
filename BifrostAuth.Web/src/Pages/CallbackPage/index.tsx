@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { clearAuthToken, isStoredTokenValid, saveAuthToken } from "../../Services/authService";
+import { clearTokens, isStoredTokenValid, saveTokens } from "../../Services/authService";
 import { queueAlertForNextPage } from "../../Contexts/AlertContext";
 import { LoginBox, PageContainer, Title } from "../LoginPage/style";
 
@@ -10,6 +10,7 @@ function CallbackPage() {
         const run = async () => {
             const searchParams = new URLSearchParams(window.location.search);
             const token = (searchParams.get("token") ?? "").trim();
+            const refreshToken = (searchParams.get("refreshToken") ?? "").trim();
 
             if (!token) {
                 queueAlertForNextPage({
@@ -20,11 +21,11 @@ function CallbackPage() {
                 return;
             }
 
-            saveAuthToken(token);
+            saveTokens(token, refreshToken);
 
             const valid = await isStoredTokenValid();
             if (!valid) {
-                clearAuthToken();
+                clearTokens();
                 queueAlertForNextPage({
                     type: "error",
                     message: "Token invalido ou expirado."

@@ -11,13 +11,13 @@ namespace BifrostAuth.Application.Sevices
     public class UserService : IUserService
     {
         private readonly IRepository<User> _repository;
-        private readonly IPasswordHash _passwordHasher;
+        private readonly IHasher _passwordHasher;
         private readonly IApplicationService _applicationService;
         private readonly IUserApplicationService _userApplicationService;
         private readonly IEmailService _emailService;
         private readonly IEventBus _eventBus;
 
-        public UserService(IRepository<User> repository, IPasswordHash passwordHasher, IApplicationService applicationService, IUserApplicationService userApplicationService, IEmailService emailService, IEventBus eventBus)
+        public UserService(IRepository<User> repository, IHasher passwordHasher, IApplicationService applicationService, IUserApplicationService userApplicationService, IEmailService emailService, IEventBus eventBus)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;

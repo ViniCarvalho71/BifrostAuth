@@ -1,4 +1,5 @@
 import type { Application, ApplicationCreateRequest } from "../Types/Application.ts";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
@@ -13,15 +14,6 @@ type ErrorBody = {
 	title?: string;
 	detail?: string;
 };
-
-function getAuthHeaders(): HeadersInit {
-	const token = localStorage.getItem("token");
-
-	return {
-		"Content-Type": "application/json",
-		...(token ? { Authorization: `Bearer ${token}` } : {})
-	};
-}
 
 async function readErrorMessage(resultado: Response): Promise<string | null> {
 	const rawBody = await resultado.text();
@@ -38,9 +30,8 @@ async function readErrorMessage(resultado: Response): Promise<string | null> {
 }
 
 export async function getApplications() {
-	const resultado = await fetch(`${URL_API}/api/applications`, {
-		method: "GET",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/applications`, {
+		method: "GET"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {
@@ -61,9 +52,8 @@ export async function getApplications() {
 
 export async function getOData(query?: string) {
 	const queryString = query ? `?${query}` : "";
-	const resultado = await fetch(`${URL_API}/api/applications/getOData${queryString}`, {
-		method: "GET",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/applications/getOData${queryString}`, {
+		method: "GET"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {
@@ -97,9 +87,8 @@ export async function getApplicationByClientId(clientId: string) {
 }
 
 export async function getApplicationById(id: string) {
-	const resultado = await fetch(`${URL_API}/api/applications/${id}`, {
-		method: "GET",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/applications/${id}`, {
+		method: "GET"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {
@@ -119,9 +108,8 @@ export async function getApplicationById(id: string) {
 }
 
 export async function createApplication(application: ApplicationCreateRequest) {
-	const resultado = await fetch(`${URL_API}/api/applications`, {
+	const resultado = await fetchWithAuth(`${URL_API}/api/applications`, {
 		method: "POST",
-		headers: getAuthHeaders(),
 		body: JSON.stringify(application)
 	});
 
@@ -149,9 +137,8 @@ export async function createApplication(application: ApplicationCreateRequest) {
 }
 
 export async function updateApplication(application: Application) {
-	const resultado = await fetch(`${URL_API}/api/applications/${application.id}`, {
+	const resultado = await fetchWithAuth(`${URL_API}/api/applications/${application.id}`, {
 		method: "PUT",
-		headers: getAuthHeaders(),
 		body: JSON.stringify(application)
 	});
 
@@ -172,9 +159,8 @@ export async function updateApplication(application: Application) {
 }
 
 export async function deleteApplication(id: string) {
-	const resultado = await fetch(`${URL_API}/api/applications/${id}`, {
-		method: "DELETE",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/applications/${id}`, {
+		method: "DELETE"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {

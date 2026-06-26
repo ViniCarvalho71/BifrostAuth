@@ -15,6 +15,10 @@ namespace BifrostAuth.Infrastructure.NHibernate.Mappings
                 .CustomSqlType("uuid")
                 .Not.Nullable();
 
+            Map(x => x.ApplicationId)
+                .CustomSqlType("uuid")
+                .Not.Nullable();
+
             Map(x => x.Token)
                 .Length(500)
                 .Not.Nullable();

@@ -147,6 +147,9 @@ function LoginPage() {
                 const callbackBase = redirectUrl ?? window.location.origin;
                 const callbackUrl = new URL("/callback", callbackBase);
                 callbackUrl.searchParams.set("token", resultado.token);
+                if (resultado.refreshToken) {
+                    callbackUrl.searchParams.set("refreshToken", resultado.refreshToken);
+                }
                 window.location.assign(callbackUrl.toString());
                 return;
             }

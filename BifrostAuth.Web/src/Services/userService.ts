@@ -1,4 +1,5 @@
 import type { User, UserCreateRequest } from "../Types/User";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
@@ -13,15 +14,6 @@ type ErrorBody = {
 	title?: string;
 	detail?: string;
 };
-
-function getAuthHeaders(): HeadersInit {
-	const token = localStorage.getItem("token");
-
-	return {
-		"Content-Type": "application/json",
-		...(token ? { Authorization: `Bearer ${token}` } : {})
-	};
-}
 
 async function readErrorMessage(resultado: Response): Promise<string | null> {
 	const rawBody = await resultado.text();
@@ -38,9 +30,8 @@ async function readErrorMessage(resultado: Response): Promise<string | null> {
 }
 
 export async function getUsers() {
-	const resultado = await fetch(`${URL_API}/api/Users`, {
-		method: "GET",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/Users`, {
+		method: "GET"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {
@@ -61,9 +52,8 @@ export async function getUsers() {
 
 export async function getOData(query?: string) {
 	const queryString = query ? `?${query}` : "";
-	const resultado = await fetch(`${URL_API}/api/Users/getOData${queryString}`, {
-		method: "GET",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/Users/getOData${queryString}`, {
+		method: "GET"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {
@@ -87,9 +77,8 @@ export async function getOData(query?: string) {
 }
 
 export async function getUserById(id: string) {
-	const resultado = await fetch(`${URL_API}/api/Users/${id}`, {
-		method: "GET",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/Users/${id}`, {
+		method: "GET"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {
@@ -109,9 +98,8 @@ export async function getUserById(id: string) {
 }
 
 export async function createUser(user: UserCreateRequest) {
-	const resultado = await fetch(`${URL_API}/api/Users`, {
+	const resultado = await fetchWithAuth(`${URL_API}/api/Users`, {
 		method: "POST",
-		headers: getAuthHeaders(),
 		body: JSON.stringify(user)
 	});
 
@@ -138,9 +126,8 @@ export async function createUser(user: UserCreateRequest) {
 }
 
 export async function updateUser(user: User) {
-	const resultado = await fetch(`${URL_API}/api/Users/${user.id}`, {
+	const resultado = await fetchWithAuth(`${URL_API}/api/Users/${user.id}`, {
 		method: "PUT",
-		headers: getAuthHeaders(),
 		body: JSON.stringify(user)
 	});
 
@@ -167,9 +154,8 @@ export async function updateUser(user: User) {
 }
 
 export async function deleteUser(id: string) {
-	const resultado = await fetch(`${URL_API}/api/Users/${id}`, {
-		method: "DELETE",
-		headers: getAuthHeaders()
+	const resultado = await fetchWithAuth(`${URL_API}/api/Users/${id}`, {
+		method: "DELETE"
 	});
 
 	if (resultado.status < 200 || resultado.status >= 300) {

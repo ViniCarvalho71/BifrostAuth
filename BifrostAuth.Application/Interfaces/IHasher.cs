@@ -4,7 +4,7 @@ using System.Text;
 
 namespace BifrostAuth.Application.Interfaces
 {
-    public interface IPasswordHash
+    public interface IHasher
     {
         string Hash(string password);
         bool Verify(string hash, string password);

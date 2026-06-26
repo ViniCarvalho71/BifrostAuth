@@ -8,6 +8,8 @@ namespace BifrostAuth.Models
     {
         public virtual Guid UserId { get; set; }
 
+        public virtual Guid ApplicationId { get; set; }
+
         public virtual string Token { get; set; }
 
         public virtual DateTime ExpiresAt { get; set; }

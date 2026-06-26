@@ -1,4 +1,93 @@
-const TOKEN_STORAGE_KEY = "token";
+const TOKEN_KEY = "token";
+const REFRESH_TOKEN_KEY = "refreshToken";
+
+const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
+
+// ─── Token Storage ────────────────────────────────────────────────────────────
+
+export function getAccessToken(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function saveTokens(token: string, refreshToken: string): void {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+export function clearTokens(): void {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+export function logout(): void {
+    clearTokens();
+    window.location.assign("/login");
+}
+
+// ─── Aliases mantidos para compatibilidade com código existente ───────────────
+
+/** @deprecated Use getAccessToken() */
+export function getAuthToken(): string | null {
+    return getAccessToken();
+}
+
+/** @deprecated Use saveTokens() */
+export function saveAuthToken(token: string): void {
+    localStorage.setItem(TOKEN_KEY, token);
+}
+
+/** @deprecated Use clearTokens() */
+export function clearAuthToken(): void {
+    localStorage.removeItem(TOKEN_KEY);
+}
+
+// ─── Refresh Token ────────────────────────────────────────────────────────────
+
+export type AuthResponse = {
+    token: string;
+    refreshToken: string;
+};
+
+let refreshingPromise: Promise<AuthResponse> | null = null;
+
+export async function refreshToken(): Promise<AuthResponse> {
+    if (refreshingPromise) {
+        return refreshingPromise;
+    }
+
+    refreshingPromise = (async () => {
+        try {
+            const currentRefreshToken = getRefreshToken();
+            if (!currentRefreshToken) {
+                throw new Error("Sem refresh token disponível.");
+            }
+
+            const response = await fetch(`${URL_API}/api/auth/refresh`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refreshToken: currentRefreshToken })
+            });
+
+            if (!response.ok) {
+                throw new Error("Falha ao renovar token.");
+            }
+
+            const data = (await response.json()) as AuthResponse;
+            saveTokens(data.token, data.refreshToken);
+            return data;
+        } finally {
+            refreshingPromise = null;
+        }
+    })();
+
+    return refreshingPromise;
+}
+
+// ─── JWT Validation ───────────────────────────────────────────────────────────
 
 function toBase64Url(bytes: Uint8Array): string {
     let binary = "";
@@ -77,18 +166,6 @@ function isAudienceValid(audience: string | string[] | undefined, expectedAudien
     return false;
 }
 
-export function getAuthToken(): string | null {
-    return localStorage.getItem(TOKEN_STORAGE_KEY);
-}
-
-export function saveAuthToken(token: string): void {
-    localStorage.setItem(TOKEN_STORAGE_KEY, token);
-}
-
-export function clearAuthToken(): void {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-}
-
 export async function isJwtValid(token: string): Promise<boolean> {
     const secret = import.meta.env.VITE_JWT_SECRET as string | undefined;
     const clientId = (import.meta.env.CLIENT_ID as string | undefined)?.trim();
@@ -113,15 +190,26 @@ export async function isJwtValid(token: string): Promise<boolean> {
 }
 
 export async function isStoredTokenValid(): Promise<boolean> {
-    const token = getAuthToken();
-    if (!token) {
+    const token = getAccessToken();
+
+    // Se o token existe e ainda é válido, tudo certo
+    if (token) {
+        const valid = await isJwtValid(token);
+        if (valid) return true;
+    }
+
+    // Token ausente ou expirado — tenta renovar via refresh token
+    const storedRefreshToken = getRefreshToken();
+    if (!storedRefreshToken) {
+        clearTokens();
         return false;
     }
 
-    const valid = await isJwtValid(token);
-    if (!valid) {
-        clearAuthToken();
+    try {
+        await refreshToken();
+        return true;
+    } catch {
+        clearTokens();
+        return false;
     }
-
-    return valid;
 }

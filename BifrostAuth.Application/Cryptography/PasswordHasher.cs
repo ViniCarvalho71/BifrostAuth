@@ -5,7 +5,7 @@ using BifrostAuth.Application.Interfaces;
 
 namespace BifrostAuth.Application.Criptography
 {
-    public class PasswordHasher : IPasswordHash
+    public class PasswordHasher : IHasher
     {
         public string Hash(string password)
         {

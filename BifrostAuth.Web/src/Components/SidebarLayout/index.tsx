@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { clearAuthToken } from "../../Services/authService";
-import { returnToAuthorize } from "../../Utils/returnToAuthorize";
+import { logout } from "../../Services/authService";
 import {
   Brand,
   Content,
@@ -23,9 +22,8 @@ import {
 function SidebarLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const logout = () => {
-    clearAuthToken();
-    returnToAuthorize();
+  const handleLogout = () => {
+    logout();
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -45,7 +43,7 @@ function SidebarLayout() {
             <SidebarLink to="/cargos">Cargos</SidebarLink>
           </Nav>
           <TopBar>
-            <LogoutButton type="button" onClick={logout}>
+            <LogoutButton type="button" onClick={handleLogout}>
               Sair
             </LogoutButton>
           </TopBar>
@@ -79,7 +77,7 @@ function SidebarLayout() {
             <MobileLink to="/cargos" onClick={closeMobileMenu}>
               Cargos
             </MobileLink>
-            <LogoutButton type="button" onClick={logout}>
+            <LogoutButton type="button" onClick={handleLogout}>
               Sair
             </LogoutButton>
           </MobileNav>

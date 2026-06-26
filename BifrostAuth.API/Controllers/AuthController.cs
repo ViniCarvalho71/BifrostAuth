@@ -20,9 +20,23 @@ namespace BifrostAuth.API.Controllers
         {
             try
             {
-                var response = _authService.Login(loginDto.Email, loginDto.Password, loginDto.ClientId);
-                return Ok(new { token = response} );
+                AuthDto response = _authService.Login(loginDto.Email, loginDto.Password, loginDto.ClientId);
+                return Ok(response);
 
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("refresh")]
+        public IActionResult RefreshToken([FromBody] RefreshDto refreshtoken)
+        {
+            try
+            {
+                AuthDto response = _authService.Refresh(refreshtoken.RefreshToken);
+                return Ok(response);
             }
             catch (Exception ex)
             {

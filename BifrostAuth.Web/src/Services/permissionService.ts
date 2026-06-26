@@ -1,4 +1,5 @@
 import type { Permission, PermissionCreateRequest } from "../Types/Permission";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
@@ -13,15 +14,6 @@ type ErrorBody = {
     title?: string;
     detail?: string;
 };
-
-function getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem("token");
-
-    return {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-    };
-}
 
 async function readErrorMessage(resultado: Response): Promise<string | null> {
     const rawBody = await resultado.text();
@@ -38,9 +30,8 @@ async function readErrorMessage(resultado: Response): Promise<string | null> {
 }
 
 export async function getPermissions() {
-    const resultado = await fetch(`${URL_API}/api/Permissions`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Permissions`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -61,9 +52,8 @@ export async function getPermissions() {
 
 export async function getPermissionsOData(query?: string) {
     const queryString = query ? `?${query}` : "";
-    const resultado = await fetch(`${URL_API}/api/Permissions/getOData${queryString}`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Permissions/getOData${queryString}`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -86,9 +76,8 @@ export async function getPermissionsOData(query?: string) {
 }
 
 export async function getPermissionById(id: string) {
-    const resultado = await fetch(`${URL_API}/api/Permissions/${id}`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Permissions/${id}`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -108,9 +97,8 @@ export async function getPermissionById(id: string) {
 }
 
 export async function createPermission(payload: PermissionCreateRequest) {
-    const resultado = await fetch(`${URL_API}/api/Permissions`, {
+    const resultado = await fetchWithAuth(`${URL_API}/api/Permissions`, {
         method: "POST",
-        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
     });
 
@@ -137,9 +125,8 @@ export async function createPermission(payload: PermissionCreateRequest) {
 }
 
 export async function updatePermission(payload: Permission) {
-    const resultado = await fetch(`${URL_API}/api/Permissions/${payload.id}`, {
+    const resultado = await fetchWithAuth(`${URL_API}/api/Permissions/${payload.id}`, {
         method: "PUT",
-        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
     });
 
@@ -166,9 +153,8 @@ export async function updatePermission(payload: Permission) {
 }
 
 export async function deletePermission(id: string) {
-    const resultado = await fetch(`${URL_API}/api/Permissions/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/Permissions/${id}`, {
+        method: "DELETE"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {

@@ -44,11 +44,12 @@ export async function Login(loginRequest: LoginRequest) {
         };
     }
 
-    const token = (await resultado.json()).token as string | null;
+    const body = await resultado.json() as { token?: string | null; refreshToken?: string | null };
 
     return {
         status: resultado.status,
-        token
+        token: body.token ?? null,
+        refreshToken: body.refreshToken ?? null
     }
 }
 

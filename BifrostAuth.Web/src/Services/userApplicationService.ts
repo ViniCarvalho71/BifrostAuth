@@ -1,4 +1,5 @@
 import type { UserApplication, UserApplicationCreateRequest } from "../Types/UserApplication";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 const URL_API = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? "";
 
@@ -15,15 +16,6 @@ type ErrorBody = {
 
 const GUID_REGEX =
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
-
-function getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem("token");
-
-    return {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-    };
-}
 
 async function readErrorMessage(resultado: Response): Promise<string | null> {
     const rawBody = await resultado.text();
@@ -48,9 +40,8 @@ function toODataGuidLiteral(value: string): string {
 }
 
 export async function getUserApplications() {
-    const resultado = await fetch(`${URL_API}/api/UserApplication`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/UserApplication`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -71,9 +62,8 @@ export async function getUserApplications() {
 
 export async function getUserApplicationOData(query?: string) {
     const queryString = query ? `?${query}` : "";
-    const resultado = await fetch(`${URL_API}/api/UserApplication/getOData${queryString}`, {
-        method: "GET",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/UserApplication/getOData${queryString}`, {
+        method: "GET"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {
@@ -114,9 +104,8 @@ export async function createUserApplication(payload: UserApplicationCreateReques
         };
     }
 
-    const resultado = await fetch(`${URL_API}/api/UserApplication`, {
+    const resultado = await fetchWithAuth(`${URL_API}/api/UserApplication`, {
         method: "POST",
-        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
     });
 
@@ -150,9 +139,8 @@ export async function deleteUserApplication(id: string) {
         };
     }
 
-    const resultado = await fetch(`${URL_API}/api/UserApplication/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders()
+    const resultado = await fetchWithAuth(`${URL_API}/api/UserApplication/${id}`, {
+        method: "DELETE"
     });
 
     if (resultado.status < 200 || resultado.status >= 300) {

@@ -9,6 +9,7 @@ public sealed class CreateRefreshTokens_202605130008 : Migration
     {
         Create.Table("refreshtokens")
             .WithColumn("id").AsGuid().PrimaryKey()
+            .WithColumn("applicationid").AsGuid().NotNullable()
             .WithColumn("createdat").AsDateTime2().NotNullable()
             .WithColumn("updatedat").AsDateTime2().NotNullable()
             .WithColumn("userid").AsGuid().NotNullable()
@@ -21,6 +22,11 @@ public sealed class CreateRefreshTokens_202605130008 : Migration
         Create.ForeignKey("fk_refreshtokens_user")
             .FromTable("refreshtokens").ForeignColumn("userid")
             .ToTable("users").PrimaryColumn("id")
+            .OnDeleteOrUpdate(System.Data.Rule.Cascade);
+
+        Create.ForeignKey("fk_refreshtokens_application")
+            .FromTable("refreshtokens").ForeignColumn("applicationid")
+            .ToTable("applications").PrimaryColumn("id")
             .OnDeleteOrUpdate(System.Data.Rule.Cascade);
 
         Create.Index("ix_refreshtokens_userid").OnTable("refreshtokens")

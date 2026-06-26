@@ -1,15 +1,15 @@
 ﻿using BifrostAuth.Application.Configurations;
+using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
 using BifrostAuth.Domain.Repositories;
 using BifrostAuth.Models;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace BifrostAuth.Application.Sevices
 {
@@ -17,19 +17,22 @@ namespace BifrostAuth.Application.Sevices
     {
         private readonly IRepository<User> _repository;
         private readonly JwtSettings _jwtSettings;
-        private readonly IPasswordHash _passwordHasher;
+        private readonly IHasher _hasher;
         private readonly IRepository<Models.Application> _applicationRepository;
+        private readonly IRepository<RefreshToken> _refreshTokenRepository;
 
         public AuthService(
             IRepository<User> repository,
             IOptions<JwtSettings> jwtOptions,
-            IPasswordHash passwordHasher,
-            IRepository<Models.Application> applicationRepository)
+            IHasher hasher,
+            IRepository<Models.Application> applicationRepository,
+            IRepository<RefreshToken> refreshTokenRepository)
         {
             _repository = repository;
             _jwtSettings = jwtOptions.Value;
-            _passwordHasher = passwordHasher;
+            _hasher = hasher;
             _applicationRepository = applicationRepository;
+            _refreshTokenRepository = refreshTokenRepository;
         }
 
         public string GenerateToken(string userId, string email,string login, IList<string> roles, IList<string> permissions, string client_id)
@@ -64,16 +67,87 @@ namespace BifrostAuth.Application.Sevices
                 issuer: _jwtSettings.Issuer,
                 audience: client_id,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
+                expires: DateTime.UtcNow.AddMinutes(15),
                 signingCredentials: credentials
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-        public string Login(string email, string password, string client_id)
+
+        private AuthDto CreateSession(User user, Models.Application application)
         {
-            try
+            var roles = user.UserRoles
+                .Select(ur => ur.Role.Name)
+                .ToList();
+
+            var permissions = user.UserRoles
+                .SelectMany(ur => ur.Role.RolePermissions)
+                .Select(rp => rp.Permission.Name)
+                .Distinct()
+                .ToList();
+
+            RevokeRefreshTokens(user.Id, application.Id);
+
+            string jwtToken = GenerateToken(
+                user.Id.ToString(),
+                user.Email,
+                user.Login,
+                roles,
+                permissions,
+                application.ClientId);
+
+            string refreshToken = GenerateRefreshToken();
+
+            _refreshTokenRepository.Save(new RefreshToken
             {
+                Token = ComputeRefreshTokenHash(refreshToken),
+                UserId = user.Id,
+                ApplicationId = application.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+
+            });
+
+            return new AuthDto
+            {
+                Token = jwtToken,
+                RefreshToken = refreshToken
+            };
+        }
+
+        private string ComputeRefreshTokenHash(string refreshToken)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
+
+            byte[] bytes = Encoding.UTF8.GetBytes(refreshToken);
+            byte[] hash = SHA256.HashData(bytes);
+
+            return Convert.ToHexString(hash);
+        }
+
+        private string GenerateRefreshToken()
+        {
+            Span<byte> bytes = stackalloc byte[32];
+
+            RandomNumberGenerator.Fill(bytes);
+
+            return WebEncoders.Base64UrlEncode(bytes);
+        }
+
+        private void RevokeRefreshTokens(Guid userId, Guid applicationId)
+        {
+           _refreshTokenRepository.Query()
+                .Where(rt => rt.ExpiresAt > DateTime.UtcNow && rt.RevokedAt == null && rt.UserId == userId && rt.ApplicationId == applicationId)
+                .ToList()
+                .ForEach(rt =>
+                {
+                    rt.RevokedAt = DateTime.UtcNow;
+                    _refreshTokenRepository.Update(rt);
+                });
+        }
+        public AuthDto Login(string email, string password, string client_id)
+        {
                 var application = _applicationRepository.Query()
                     .FirstOrDefault(a => a.ClientId == client_id && a.IsActive);
 
@@ -83,7 +157,7 @@ namespace BifrostAuth.Application.Sevices
                 }
 
                 var user = _repository.Query().FirstOrDefault(u => u.Email == email);
-                if (user == null || !_passwordHasher.Verify(user.Password, password))
+                if (user == null || !_hasher.Verify(user.Password, password))
                 {
                     throw new Exception("Email ou senha inválidos");
                 }
@@ -96,25 +170,33 @@ namespace BifrostAuth.Application.Sevices
                     throw new Exception("Usuário não tem acesso a essa aplicação");
                 }
 
-                var roles = user.UserRoles
-                    .Select(ur => ur.Role.Name)
-                    .ToList();
+                return CreateSession(user, application);
+        }
 
-                var permissions = user.UserRoles
-                    .SelectMany(ur => ur.Role.RolePermissions)
-                    .Select(rp => rp.Permission.Name)
-                    .Distinct()
-                    .ToList();
+        public AuthDto Refresh(string refreshToken)
+        {
+            string refreshTokenHash = ComputeRefreshTokenHash(refreshToken);
 
-                string jwt_token = GenerateToken(user.Id.ToString(), user.Email,user.Login, roles, permissions, client_id);
+            RefreshToken refreshTokenEntity = _refreshTokenRepository
+                .Query()
+                .FirstOrDefault(rt =>
+                    rt.Token == refreshTokenHash &&
+                    rt.RevokedAt == null);
 
-                return jwt_token;
+            if (refreshTokenEntity == null)
+                throw new Exception("Refresh token inválido ou expirado");
 
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            var user = _repository.Get(refreshTokenEntity.UserId);
+
+            if (user == null)
+                throw new Exception("Usuário não encontrado");
+
+            var application = _applicationRepository.Get(refreshTokenEntity.ApplicationId);
+
+            if (application == null || !application.IsActive)
+                throw new Exception("Application inválida");
+
+            return CreateSession(user, application);
         }
     }
 }
