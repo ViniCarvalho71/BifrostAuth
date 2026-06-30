@@ -10,14 +10,17 @@ namespace BifrostAuth.EmailWorker
     public class EmailSender
     {
         private readonly IEmailService _emailService;
+        private readonly string _frontendUrl;
         public EmailSender(IEmailService emailService) 
         {
             _emailService = emailService;
+            _frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "http://localhost:3000";
         }
 
-        public async Task SendWelcomeEmailAsync(
+        public async Task SendConfirmationEmailAsync(
         string recipient,
-        string login)
+        string login,
+        string token)
         {
             var templatePath = Path.Combine(
                 AppContext.BaseDirectory,
@@ -27,9 +30,12 @@ namespace BifrostAuth.EmailWorker
             var template =
                 await File.ReadAllTextAsync(templatePath);
 
+            string confirmationUrl =
+            $"{_frontendUrl}/confirm-email?token={Uri.EscapeDataString(token)}";
+
             template = template.Replace("{{LOGIN}}", login);
             template = template.Replace("{{ANO}}", DateTime.Now.Year.ToString());
-            template = template.Replace("{{URL_LOGIN}}", "https://app.bifrostauth.com/login");
+            template = template.Replace("{{CONFIRMATION_URL}}", confirmationUrl);
 
             var email = new Email
             {

@@ -1,9 +1,14 @@
 using BifrostAuth.Application.Dtos;
 using BifrostAuth.Application.Interfaces;
+using BifrostAuth.Domain.Enums;
+using BifrostAuth.Domain.Models;
 using BifrostAuth.Domain.Repositories;
 using BifrostAuth.Messaging.Abstractions;
 using BifrostAuth.Messaging.Events;
 using BifrostAuth.Models;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace BifrostAuth.Application.Sevices
@@ -16,8 +21,9 @@ namespace BifrostAuth.Application.Sevices
         private readonly IUserApplicationService _userApplicationService;
         private readonly IEmailService _emailService;
         private readonly IEventBus _eventBus;
+        private readonly IRepository<UserToken> _userTokenRepository;
 
-        public UserService(IRepository<User> repository, IHasher passwordHasher, IApplicationService applicationService, IUserApplicationService userApplicationService, IEmailService emailService, IEventBus eventBus)
+        public UserService(IRepository<User> repository, IHasher passwordHasher, IApplicationService applicationService, IUserApplicationService userApplicationService, IEmailService emailService, IEventBus eventBus, IRepository<UserToken> userTokenRepository)
         {
             _repository = repository;
             _passwordHasher = passwordHasher;
@@ -25,6 +31,16 @@ namespace BifrostAuth.Application.Sevices
             _userApplicationService = userApplicationService;
             _emailService = emailService;
             _eventBus = eventBus;
+            _userTokenRepository = userTokenRepository;
+        }
+        private string ComputeUserTokenHash(string refreshToken)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
+
+            byte[] bytes = Encoding.UTF8.GetBytes(refreshToken);
+            byte[] hash = SHA256.HashData(bytes);
+
+            return Convert.ToHexString(hash);
         }
 
         public static void ValidatePassword(string password)
@@ -172,7 +188,8 @@ namespace BifrostAuth.Application.Sevices
                 _eventBus.PublishAsync(new UserCreatedEvent(
                         createdUser.Id,
                         createdUser.Email,
-                        createdUser.Login
+                        createdUser.Login,
+                        CreateConfirmationToken(createdUser.Id)
                     )
                 );
             }
@@ -181,5 +198,42 @@ namespace BifrostAuth.Application.Sevices
                 throw new Exception($"Erro ao registrar usuário: {ex.Message}");
             }
         }
+
+        private string CreateConfirmationToken(Guid userId)
+        {
+            var activeTokens = _userTokenRepository.Query()
+                .Where(t =>
+                    t.UserId == userId &&
+                    t.TokenType == TokenType.EmailConfirmation &&
+                    t.UsedAt == null &&
+                    t.ExpiresAt > DateTime.UtcNow)
+                .ToList();
+
+            foreach (var activetoken in activeTokens)
+            {
+                activetoken.UsedAt = DateTime.UtcNow;
+                _userTokenRepository.Update(activetoken);
+            }
+
+            // Gera token aleatório
+            Span<byte> bytes = stackalloc byte[32];
+            RandomNumberGenerator.Fill(bytes);
+
+            string token = WebEncoders.Base64UrlEncode(bytes);
+
+            // Salva apenas o hash
+            var entity = new UserToken
+            {
+                UserId = userId,
+                TokenType = TokenType.EmailConfirmation,
+                TokenHash = ComputeUserTokenHash(token), // eu renomearia esse método
+                ExpiresAt = DateTime.UtcNow.AddHours(24)
+            };
+
+            _userTokenRepository.Save(entity);
+
+            return token;
+        }
+     
     }
 }

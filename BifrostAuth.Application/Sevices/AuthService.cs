@@ -198,5 +198,10 @@ namespace BifrostAuth.Application.Sevices
 
             return CreateSession(user, application);
         }
+
+        public void ConfirmEmail(string token)
+        {
+            throw new NotImplementedException("Método ConfirmEmail não implementado.");
+        }
     }
 }

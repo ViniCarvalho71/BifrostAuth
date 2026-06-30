@@ -7,6 +7,7 @@ namespace BifrostAuth.Messaging.Events
     public record UserCreatedEvent(
         Guid UserId,
         string Email,
-        string Login
+        string Login,
+        string ConfirmationToken 
      );
 }

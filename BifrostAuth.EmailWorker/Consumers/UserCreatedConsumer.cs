@@ -89,9 +89,10 @@ public class UserCreatedConsumer : BackgroundService
         var emailSender =
         scope.ServiceProvider.GetRequiredService<EmailSender>();
 
-        await emailSender.SendWelcomeEmailAsync(
+        await emailSender.SendConfirmationEmailAsync(
             evt.Email,
-            evt.Login);
+            evt.Login,
+            evt.ConfirmationToken);
     }
 
     public override async Task StopAsync(
